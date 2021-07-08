@@ -21,12 +21,13 @@ Gst.init(sys.argv[1:])
 # GstElementFactory -> required to create a GstElement object. 
 # Element factories -> are the basic types in a Gst Registry. Describe all plugins and elements GStreamer can create
 # Gst.ElemenFactory.make() = gst_element_factory_find(<factory_name>) and gst_element_factory_create(<factory>, <element_name>)
-# gst-inspect-1.0 videotestsrc gives Factory details, Plugin details, Pad templates (source only)
+# `gst-inspect-1.0 videotestsrc` gives Factory details, Plugin details, Pad templates (source only) and more
+# videotestsrc creates a test video pattern
+#autovideosink displays the video on a window
+
 source = Gst.ElementFactory.make("videotestsrc", "source")
 sink = Gst.ElementFactory.make("autovideosink", "sink")
-
 #Create empty pipeline
-
 pipeline = Gst.Pipeline.new("test-pipeline")
 print("Pipeline: ", pipeline)
 
@@ -34,8 +35,10 @@ if not pipeline or not source or not sink:
     logger.error("Not all elements could be created")
     sys.exit(1)
 
-#Add elements to pipeline
+# Add elements to pipeline
+# The elements are not linked yet
 pipeline.add(source, sink)
+# Link elements. Order matters.
 if not source.link(sink):
     logger.error("Elements not linked")
     sys.exit(1)
@@ -44,9 +47,16 @@ if not source.link(sink):
 #set source's properties
 source.props.pattern = 1
 
-#Start playing
+# Goal: start playing pipeline
+# element / pipeline states: NULL -> READY -> PAUSED -> PLAYING. When a pipeline is moved to PLAYING state, it goes through all these 4 states internally
+# NULL : Default start(and end) state. No resources allocated
+# READY : Global resources allocated -> opening devices, buffer allocation. Stream is not opened
+# PAUSED: Stream opened, but not being processed. No running clock
+# PLAYING: Stream opened and processing happens -> running clock
+# Below line is non-blocking, and does not need iteration. A separate thread is created, and processing happens on this thread
 
 ret = pipeline.set_state(Gst.State.PLAYING)
+
 if ret == Gst.StateChangeReturn.FAILURE:
     logger.error("Not able to play the pipeline")
     sys.exit(1)
