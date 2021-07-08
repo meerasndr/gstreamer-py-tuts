@@ -62,9 +62,12 @@ if ret == Gst.StateChangeReturn.FAILURE:
     sys.exit(1)
 
 # Wait for EOS or error
-
+# Why is a bus required? Bus takes care of forwarding messages from pipeline (running in a separate thread) to the application
+# Applications can avoid worrying about communicating with streaming threads / the pipeling directly. 
+# Applications only need to set a message-handler on a bus
+# Bus is periodically checked for messages, and callback is called when a message is available
 bus = pipeline.get_bus()
-msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS)
+msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS) # Blocking code
 
 #Parse message
 
@@ -72,7 +75,6 @@ if msg:
     if msg.type == Gst.MessageType.ERROR:
         err, debug_info = msg.parse_error()
         logger.error(f"Error received from element {msg.src.get_name()}: {err.message}")
-        logger.error(f"Debugging information: {debug_info if debug_info else 'none'}")
     elif msg.type == Gst.MessageType.EOS:
         logger.info("End-Of-Stream reached.")
     else:
