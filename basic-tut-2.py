@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/ienv python3
 
 import sys
 import gi
@@ -13,20 +13,27 @@ from gi.repository import Gst, GObject, GLib
 logging.basicConfig(level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %(message)s")
 logger = logging.getLogger(__name__)
 
-#Initialize GStreamer
+# Initialize GStreamer library-> set up internal path lists, register built-in elements, load standard plugins
+# GstRegistry setup??
 Gst.init(sys.argv[1:])
 
 #Create elements
+# GstElementFactory -> required to create a GstElement object. 
+# Element factories -> are the basic types in a Gst Registry. Describe all plugins and elements GStreamer can create
+# Gst.ElemenFactory.make() = gst_element_factory_find(<factory_name>) and gst_element_factory_create(<factory>, <element_name>)
+# gst-inspect-1.0 videotestsrc gives Factory details, Plugin details, Pad templates (source only)
 source = Gst.ElementFactory.make("videotestsrc", "source")
 sink = Gst.ElementFactory.make("autovideosink", "sink")
 
 #Create empty pipeline
+
 pipeline = Gst.Pipeline.new("test-pipeline")
 print("Pipeline: ", pipeline)
 
 if not pipeline or not source or not sink:
     logger.error("Not all elements could be created")
     sys.exit(1)
+
 #Add elements to pipeline
 pipeline.add(source, sink)
 if not source.link(sink):
@@ -62,5 +69,5 @@ if msg:
         # This should not happen as we only asked for ERRORs and EOS
         logger.error("Unexpected message received.")
 
-#Free stuff ?
+#Free stuff
 pipeline.set_state(Gst.State.NULL)
