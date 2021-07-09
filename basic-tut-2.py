@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 Gst.init(sys.argv[1:])
 
 #Create elements
-# GstElementFactory -> required to create a GstElement object. 
+# GstElementFactory -> required to create a GstElement object.
 # Element factories -> are the basic types in a Gst Registry. Describe all plugins and elements GStreamer can create
 # Gst.ElemenFactory.make() = gst_element_factory_find(<factory_name>) and gst_element_factory_create(<factory>, <element_name>)
 # `gst-inspect-1.0 videotestsrc` gives Factory details, Plugin details, Pad templates (source only) and more
@@ -51,7 +51,7 @@ source.props.pattern = 1
 # element / pipeline states: NULL -> READY -> PAUSED -> PLAYING. When a pipeline is moved to PLAYING state, it goes through all these 4 states internally
 # NULL : Default start(and end) state. No resources allocated
 # READY : Global resources allocated -> opening devices, buffer allocation. Stream is not opened
-# PAUSED: Stream opened, but not being processed. No running clock
+# PAUSED: Stream opened, but not being processed
 # PLAYING: Stream opened and processing happens -> running clock
 # Below line is non-blocking, and does not need iteration. A separate thread is created, and processing happens on this thread
 
@@ -63,7 +63,7 @@ if ret == Gst.StateChangeReturn.FAILURE:
 
 # Wait for EOS or error
 # Why is a bus required? Bus takes care of forwarding messages from pipeline (running in a separate thread) to the application
-# Applications can avoid worrying about communicating with streaming threads / the pipeling directly. 
+# Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
 # Applications only need to set a message-handler on a bus
 # Bus is periodically checked for messages, and callback is called when a message is available
 bus = pipeline.get_bus()
