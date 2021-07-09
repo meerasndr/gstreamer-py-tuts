@@ -47,7 +47,7 @@ class CustomData:
         self.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
 
         #The uridecodebin element comes with several element signals including `pad-added`
-        #When uridecodebin(source) generates `pad-added` signal, the callback is invoked
+        #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
         #Non-blocking
         self.source.connect("pad-added", self.pad_added_handler)
 
@@ -57,8 +57,11 @@ class CustomData:
         # READY : Global resources allocated -> opening devices, buffer allocation. Stream is not opened
         # PAUSED: Stream opened, but not being processed
         # PLAYING: Stream opened and processing happens -> running clock
-        # Below line is non-blocking, and does not need iteration. A separate thread is created, and processing happens on this thread
 
+        #In this case, the pipeline first moves from NULL to READY
+        # pad-added signals are triggered, callback is executed
+        # Once there is a link success, pipeline moves to PAUSED, then to PLAY
+        
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             logger.error("Unable to change state of pipeline to playing")
