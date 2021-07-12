@@ -96,12 +96,12 @@ class CustomData:
                     break
 
     #callback function
-    '''
-    src is the GstElement which triggered the signal. In this example, it can only be the uridecodebin, since it is the only signal to which we have attached. The first parameter of a signal handler is always the object that has triggered it.
+    
+    # src is the GstElement which triggered the signal. In this example, it can only be the uridecodebin, since it is the only signal to which we have attached. The first parameter of a signal handler is always the object that has triggered it.
 
-new_pad is the GstPad that has just been added to the src element. This is usually the pad to which we want to link.
+# new_pad is the GstPad that has just been added to the src element. This is usually the pad to which we want to link.
 
-'''
+
     def pad_added_handler(self, src, new_pad):
         sink_pad = self.convert.get_static_pad("sink")
         print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
