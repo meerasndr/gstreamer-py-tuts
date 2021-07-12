@@ -45,7 +45,7 @@ class CustomData:
 
         #Set URI to play
         self.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
-
+        #self.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer_gr.srt"
         #The uridecodebin element comes with several element signals including `pad-added`
         #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
         #Non-blocking
@@ -61,17 +61,20 @@ class CustomData:
         #In this case, the pipeline first moves from NULL to READY
         # pad-added signals are triggered, callback is executed
         # Once there is a link success, pipeline moves to PAUSED, then to PLAY
-        
+
         ret = self.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             logger.error("Unable to change state of pipeline to playing")
             sys.exit(1)
 
-        #Listening for messages:
+        #Listening for messages: Wait for EOS or error
+        # Why is a bus required? Bus takes care of forwarding messages from pipeline (running in a separate thread) to the application
+        # Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
+        # Applications only need to set a message-handler on a bus
+        # Bus is periodically checked for messages, and callback is called when a message is available
         self.bus = self.pipeline.get_bus()
         while True:
             msg = self.bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
-
             #Parse message
             if msg:
                 if msg.type == Gst.MessageType.ERROR:
@@ -92,6 +95,13 @@ class CustomData:
                     logger.error("Unexpected message received.")
                     break
 
+    #callback function
+    '''
+    src is the GstElement which triggered the signal. In this example, it can only be the uridecodebin, since it is the only signal to which we have attached. The first parameter of a signal handler is always the object that has triggered it.
+
+new_pad is the GstPad that has just been added to the src element. This is usually the pad to which we want to link.
+
+'''
     def pad_added_handler(self, src, new_pad):
         sink_pad = self.convert.get_static_pad("sink")
         print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
