@@ -14,7 +14,8 @@ logger = logging.getLogger(__name__)
 class CustomData:
     def __init__(self):
 
-        # Initialize GStreamer library-> set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
+        # Initialize GStreamer library
+        # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
         Gst.init(None)
 
         #Create Elements
@@ -95,12 +96,10 @@ class CustomData:
                     logger.error("Unexpected message received.")
                     break
 
-    #callback function
-    
-    # src is the GstElement which triggered the signal. In this example, it can only be the uridecodebin, since it is the only signal to which we have attached. The first parameter of a signal handler is always the object that has triggered it.
-
-# new_pad is the GstPad that has just been added to the src element. This is usually the pad to which we want to link.
-
+    # callback function
+    # src is the GstElement which triggered the signal.
+    # new_pad is the GstPad that has just been added to the src element
+    # This is the pad to which we want to link.
 
     def pad_added_handler(self, src, new_pad):
         sink_pad = self.convert.get_static_pad("sink")
