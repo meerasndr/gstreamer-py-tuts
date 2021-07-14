@@ -115,7 +115,7 @@ class CustomData:
                     logger.info(f"Pipeline state changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}")
                     # Remember whether we are in the PLAYING state or not
                     data.playing = (new_state == Gst.State.PLAYING)
-                    if data.playing:
+                    if data.playing: # We just moved to PLAYING. Check if seeking is possible
                         #create new query object
                         seekquery = Gst.Query.new_seeking(Gst.Format.TIME)
                         if data.playbin.query(seekquery):
@@ -123,7 +123,7 @@ class CustomData:
                             if data.seek_enabled:
                                 logger.info(f"Seeking is ENABLED {data.seek_enabled} from {start} to {end}")
                             else:
-                                logger.info("Seeking is disabled for this stream\n")
+                                logger.info("Seeking is disabled for this stream\n") # Live video stream?
                         else:
                             logger.error("Seeking query failed")
         else:
