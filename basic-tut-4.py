@@ -54,10 +54,9 @@ class CustomData:
             logger.info("uri prop added")
 
         #Listening for messages
-        # Why is a bus required? Bus takes care of forwarding messages from pipeline (running in a separate thread) to the application
-        # Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
-        # Applications only need to set a message-handler on a bus
-        # Bus is periodically checked for messages, and callback is called when a message is available
+        # Why is a bus required?
+        # Bus takes care of forwarding messages from pipeline (running in a separate thread) to the application
+        # Applications can avoid worrying about communicating with streaming threads / the pipeline directly.
         data.bus = data.playbin.get_bus()
         while True:
             msg = data.bus.timed_pop_filtered(100 * Gst.MSECOND, \
@@ -67,7 +66,6 @@ class CustomData:
                 data.handle_message(msg)
             else:
                 if data.playing :
-                    #current = -1
                     ret, current = data.playbin.query_position(Gst.Format.TIME)
                     if not ret:
                         logger.error("Could not query current position")
@@ -80,8 +78,14 @@ class CustomData:
 
                     if data.seek_enabled and not data.seek_done and current > 10 * Gst.SECOND:
                         print("Reached 10s, performing seek ...\n")
-                        data.playbin.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,\
+                        data.playbin.seek_simple(Gst.Format.TIME, \
+                        Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,\
                          30 * Gst.SECOND)
+                         #Gst.SeekFlags.FLUSH - This discards all data currently in the pipeline before doing the seek.
+                         #Might pause a bit while the pipeline is refilled and the new data starts to show up,
+                         #but greatly increases the “responsiveness” of the application. If this flag is not provided,
+                         #“stale” data might be shown for a while until the new position appears at the end of the pipeline
+                         
                         data.seek_done = True
             if data.terminate:
                 data.playbin.set_state(Gst.State.NULL)
