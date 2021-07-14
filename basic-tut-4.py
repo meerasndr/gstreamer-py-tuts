@@ -85,7 +85,12 @@ class CustomData:
                          #Might pause a bit while the pipeline is refilled and the new data starts to show up,
                          #but greatly increases the “responsiveness” of the application. If this flag is not provided,
                          #“stale” data might be shown for a while until the new position appears at the end of the pipeline
-                         
+                         # Gst.SeekFlags.KEY_UNIT - With most encoded video streams, seeking to arbitrary positions is
+                         # not possible but only to certain frames called Key Frames. When this flag is used,
+                         # the seek will actually move to the closest key frame and start producing data straight away.
+                         # If this flag is not used, the pipeline will move internally to the closest key frame (it has no other alternative)
+                         # but data will not be shown until it reaches the requested position.
+                         # This last alternative is more accurate, but might take longer.
                         data.seek_done = True
             if data.terminate:
                 data.playbin.set_state(Gst.State.NULL)
@@ -111,6 +116,7 @@ class CustomData:
                     # Remember whether we are in the PLAYING state or not
                     data.playing = (new_state == Gst.State.PLAYING)
                     if data.playing:
+                        #create new query object
                         seekquery = Gst.Query.new_seeking(Gst.Format.TIME)
                         if data.playbin.query(seekquery):
                             format, data.seek_enabled, start, end = seekquery.parse_seeking()
