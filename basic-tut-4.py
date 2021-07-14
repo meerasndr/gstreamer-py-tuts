@@ -39,6 +39,13 @@ class CustomData:
         data.playbin.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
 
         # Change state to playing
+        # Goal: start playing pipeline
+        # element / pipeline states: NULL -> READY -> PAUSED -> PLAYING.
+        # When a pipeline is moved to PLAYING state, it goes through all these 4 states internally
+        # NULL : Default start(and end) state. No resources allocated
+        # READY : Global resources allocated -> opening devices, buffer allocation. Stream is not opened
+        # PAUSED: Stream opened, but not being processed
+        # PLAYING: Stream opened and processing happens -> running clock
         ret = data.playbin.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             logger.error("Unable to change state of pipeline to playing")

@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %
 logger = logging.getLogger(__name__)
 
 class CustomData:
-    def __init__(self):
+    def __init__(data):
 
         # Initialize GStreamer library
         # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
@@ -20,40 +20,41 @@ class CustomData:
 
         #Create Elements
         #uridecodebin -> Decodes data from a URI into raw media (instantiates source, demuxer, decoder internally)
-        self.source = Gst.ElementFactory.make("uridecodebin", "source")
+        data.source = Gst.ElementFactory.make("uridecodebin", "source")
         #audioconvert -> Convert audio to different formats. Ensures platform interoperability
-        self.convert = Gst.ElementFactory.make("audioconvert", "convert")
+        data.convert = Gst.ElementFactory.make("audioconvert", "convert")
         #audioresample -> Useful for converting between different audio sample rates. Again ensures platform interoperability
-        self.resample = Gst.ElementFactory.make("audioresample", "resample")
+        data.resample = Gst.ElementFactory.make("audioresample", "resample")
         #autoaudiosink -> render the audio stream to the audio card
-        self.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
+        data.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
 
         #Create Empty pipeline
-        self.pipeline = Gst.Pipeline.new("test-pipeline")
-        if not self.pipeline or not self.source or not self.convert or not self.resample or not self.sink:
+        data.pipeline = Gst.Pipeline.new("test-pipeline")
+        if not data.pipeline or not data.source or not data.convert or not data.resample or not data.sink:
             logger.error("Not all elements could be created")
             sys.exit(1)
 
         #Add elements to pipeline, the elements are not linked yet!
-        self.pipeline.add(self.source, self.convert, self.resample, self.sink)
+        data.pipeline.add(data.source, data.convert, data.resample, data.sink)
 
         #Link all elements excluding source (which contains demux, hence dynamic)
-        ret = self.convert.link(self.resample)
-        ret = ret and self.resample.link(self.sink)
+        ret = data.convert.link(data.resample)
+        ret = ret and data.resample.link(data.sink)
         if not ret:
             logger.error("Elements could not be linked")
             sys.exit(1)
 
         #Set URI to play
-        self.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
-        #self.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer_gr.srt"
+        data.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
+        #data.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer_gr.srt"
         #The uridecodebin element comes with several element signals including `pad-added`
         #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
         #Non-blocking
-        self.source.connect("pad-added", self.pad_added_handler)
+        data.source.connect("pad-added", data.pad_added_handler)
 
         # Goal: start playing pipeline
-        # element / pipeline states: NULL -> READY -> PAUSED -> PLAYING. When a pipeline is moved to PLAYING state, it goes through all these 4 states internally
+        # element / pipeline states: NULL -> READY -> PAUSED -> PLAYING.
+        # When a pipeline is moved to PLAYING state, it goes through all these 4 states internally
         # NULL : Default start(and end) state. No resources allocated
         # READY : Global resources allocated -> opening devices, buffer allocation. Stream is not opened
         # PAUSED: Stream opened, but not being processed
@@ -63,7 +64,7 @@ class CustomData:
         # pad-added signals are triggered, callback is executed
         # Once there is a link success, pipeline moves to PAUSED, then to PLAY
 
-        ret = self.pipeline.set_state(Gst.State.PLAYING)
+        ret = data.pipeline.set_state(Gst.State.PLAYING)
         if ret == Gst.StateChangeReturn.FAILURE:
             logger.error("Unable to change state of pipeline to playing")
             sys.exit(1)
@@ -73,9 +74,9 @@ class CustomData:
         # Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
         # Applications only need to set a message-handler on a bus
         # Bus is periodically checked for messages, and callback is called when a message is available
-        self.bus = self.pipeline.get_bus()
+        data.bus = data.pipeline.get_bus()
         while True:
-            msg = self.bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
+            msg = data.bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
             #Parse message
             if msg:
                 if msg.type == Gst.MessageType.ERROR:
@@ -88,7 +89,7 @@ class CustomData:
                     break
 
                 elif msg.type == Gst.MessageType.STATE_CHANGED:
-                    if msg.src == self.pipeline:
+                    if msg.src == data.pipeline:
                         old_state, new_state, pending_state = msg.parse_state_changed()
                         print(f"Pipeline state changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}")
                 else:
@@ -101,8 +102,8 @@ class CustomData:
     # new_pad is the GstPad that has just been added to the src element
     # This is the pad to which we want to link.
 
-    def pad_added_handler(self, src, new_pad):
-        sink_pad = self.convert.get_static_pad("sink")
+    def pad_added_handler(data, src, new_pad):
+        sink_pad = data.convert.get_static_pad("sink")
         print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
 
         if sink_pad.is_linked():
