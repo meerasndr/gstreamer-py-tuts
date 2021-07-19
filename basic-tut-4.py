@@ -70,11 +70,11 @@ class CustomData:
                     if not ret:
                         logger.error("Could not query current position")
                     if data.duration != Gst.CLOCK_TIME_NONE:
-                        ret, data.duration = data.query_duration(Gst.Format.TIME)
+                        ret, data.duration = data.playbin.query_duration(Gst.Format.TIME)
                         if not ret:
                             logger.error("Could not query duration")
                     # Print current position and total duration
-                    print(f"Current Position: {current} Total Duration: {data.duration}")
+                    print(f"Current Position: {current} Total Duration: {data.duration}", end="\r", flush=True)
 
                     if data.seek_enabled and not data.seek_done and current > 10 * Gst.SECOND:
                         print("Reached 10s, performing seek ...\n")
