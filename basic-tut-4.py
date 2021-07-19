@@ -118,7 +118,7 @@ if __name__ == '__main__':
                 print(f"Current Position: {current} Total Duration: {d.duration}", end="\r", flush=True)
 
                 if d.seek_enabled and not d.seek_done and current > 10 * Gst.SECOND:
-                    print("Reached 10s, performing seek ...\n")
+                    print("\nReached 10s, performing seek ...\n")
                     d.playbin.seek_simple(Gst.Format.TIME, \
                     Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,\
                      30 * Gst.SECOND)
