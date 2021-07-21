@@ -1,8 +1,8 @@
 
 1. **Clean core/plugins separation**
-```
+<code>
 The core of GStreamer is essentially media-agnostic. It only knows about bytes and blocks, and only <br> contains basic elements. The core of GStreamer is even functional enough to implement <br> low-level system tools, like cp
-```
+</code>
 What does this exactly mean?
 
 2. **Queries**
