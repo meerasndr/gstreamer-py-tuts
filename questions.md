@@ -1,7 +1,7 @@
 
-1. **Clean core/plugins sepraration**
+1. **Clean core/plugins separation**
 ```
-The core of GStreamer is essentially media-agnostic. It only knows about bytes and blocks, and only contains basic elements. The core of GStreamer is even functional enough to implement low-level system tools, like cp
+The core of GStreamer is essentially media-agnostic. It only knows about bytes and blocks, and only\ contains basic elements. The core of GStreamer is even functional enough to implement low-level\ system tools, like cp\
 ```
 What does this exactly mean?
 
