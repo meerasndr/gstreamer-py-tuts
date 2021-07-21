@@ -11,12 +11,31 @@ from gi.repository import GLib, GObject, Gst
 logging.basicConfig(level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %(message)s")
 logger = logging.getLogger(__name__)
 
+class CustomData():
+    def __init__(data):
+    # Initialize GStreamer library
+    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
+        Gst.init(None)
+
+        #Create Elements
+        #uridecodebin -> Decodes data from a URI into raw media (instantiates source, demuxer, decoder internally)
+        data.source = Gst.ElementFactory.make("uridecodebin", "source")
+        #audioconvert -> Convert audio to different formats. Ensures platform interoperability
+        data.convert = Gst.ElementFactory.make("audioconvert", "convert")
+        #audioresample -> Useful for converting between different audio sample rates. Again ensures platform interoperability
+        data.resample = Gst.ElementFactory.make("audioresample", "resample")
+        #autoaudiosink -> render the audio stream to the audio card
+        data.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
+        #Create Empty pipeline
+        data.pipeline = Gst.Pipeline.new("test-pipeline")
+        data.pad_added_handler = pad_added_handler
+
 # callback function
 # src is the GstElement which triggered the signal.
 # new_pad is the GstPad that has just been added to the src element
 # This is the pad to which we want to link.
 def pad_added_handler(src, new_pad):
-    sink_pad = data['convert'].get_static_pad("sink")
+    sink_pad = d.convert.get_static_pad("sink")
     print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
 
     if sink_pad.is_linked():
@@ -40,49 +59,34 @@ def pad_added_handler(src, new_pad):
 
     return
 
+
 # Main section
 if __name__ == '__main__':
-    # Initialize GStreamer library
-    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
-    Gst.init(None)
-
-    #Create Elements
-    #uridecodebin -> Decodes data from a URI into raw media (instantiates source, demuxer, decoder internally)
-    source = Gst.ElementFactory.make("uridecodebin", "source")
-    #audioconvert -> Convert audio to different formats. Ensures platform interoperability
-    convert = Gst.ElementFactory.make("audioconvert", "convert")
-    #audioresample -> Useful for converting between different audio sample rates. Again ensures platform interoperability
-    resample = Gst.ElementFactory.make("audioresample", "resample")
-    #autoaudiosink -> render the audio stream to the audio card
-    sink = Gst.ElementFactory.make("autoaudiosink", "sink")
-
-
-    #Create Empty pipeline
-    pipeline = Gst.Pipeline.new("test-pipeline")
-    if not pipeline or not source or not convert or not resample or not sink:
+    d = CustomData()
+    if not d.pipeline or not d.source or not d.convert or not d.resample or not d.sink:
         logger.error("Not all elements could be created")
         sys.exit(1)
 
     #Add elements to pipeline, the elements are not linked yet!
-    pipeline.add(source, convert, resample, sink)
+    d.pipeline.add(d.source, d.convert, d.resample, d.sink)
 
     #Link all elements excluding source (which contains demux, hence dynamic)
-    ret = convert.link(resample)
-    ret = ret and resample.link(sink)
+    ret = d.convert.link(d.resample)
+    ret = ret and d.resample.link(d.sink)
     if not ret:
         logger.error("Elements could not be linked")
         sys.exit(1)
 
     #Set URI to play
-    source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
+    d.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
     #data['source'].props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer_gr.srt"
     #The uridecodebin element comes with several element signals including `pad-added`
     #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
     #Non-blocking
-    source.connect("pad-added", pad_added_handler)
+    d.source.connect("pad-added", d.pad_added_handler)
 
     # Grouping all the pipeline data for ease of use in the pad_added_handler callback
-    data = {'source': source, 'convert': convert, 'resample': resample, 'sink': sink, 'pipeline': pipeline,}
+    #data = {'source': source, 'convert': convert, 'resample': resample, 'sink': sink, 'pipeline': pipeline,}
 
     # Goal: start playing pipeline
     # element / pipeline states: NULL -> READY -> PAUSED -> PLAYING.
@@ -96,7 +100,7 @@ if __name__ == '__main__':
     # pad-added signals are triggered, callback is executed
     # Once there is a link success, pipeline moves to PAUSED, then to PLAY
 
-    ret = pipeline.set_state(Gst.State.PLAYING)
+    ret = d.pipeline.set_state(Gst.State.PLAYING)
     if ret == Gst.StateChangeReturn.FAILURE:
         logger.error("Unable to change state of pipeline to playing")
         sys.exit(1)
@@ -106,7 +110,7 @@ if __name__ == '__main__':
     # Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
     # Applications only need to set a message-handler on a bus
     # Bus is periodically checked for messages, and callback is called when a message is available
-    bus = pipeline.get_bus()
+    bus = d.pipeline.get_bus()
     while True:
         msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
         #Parse message
@@ -121,7 +125,7 @@ if __name__ == '__main__':
                 break
 
             elif msg.type == Gst.MessageType.STATE_CHANGED:
-                if msg.src == pipeline:
+                if msg.src == d.pipeline:
                     old_state, new_state, pending_state = msg.parse_state_changed()
                     print(f"Pipeline state changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}")
             else:
