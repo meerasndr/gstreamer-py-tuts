@@ -12,3 +12,6 @@ How? Why?
 
 3. **Keyboard Interrupts in Python**
 Pressing Ctrl+C when the pipeline is in playing state immediately ends playback in C. How do we achieve this in Python? Possibly using try-catch?
+
+4. **Pipelines manage synchronization for their children**
+What does this mean exactly?
