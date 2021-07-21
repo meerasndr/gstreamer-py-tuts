@@ -59,10 +59,7 @@ def pad_added_handler(src, new_pad):
 
     return
 
-
-# Main section
-if __name__ == '__main__':
-    d = CustomData()
+def main():
     if not d.pipeline or not d.source or not d.convert or not d.resample or not d.sink:
         logger.error("Not all elements could be created")
         sys.exit(1)
@@ -132,3 +129,9 @@ if __name__ == '__main__':
                 # This should ideally not be reached
                 logger.error("Unexpected message received.")
                 break
+
+
+# Main section
+if __name__ == '__main__':
+    d = CustomData()
+    main()
