@@ -24,37 +24,42 @@ class CustomData():
         self.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
         #Create Empty pipeline
         self.pipeline = Gst.Pipeline.new("test-pipeline")
+    # callback function
+    # src is the GstElement which triggered the signal.
+    # new_pad is the GstPad that has just been added to the src element
+    # This is the pad to which we want to link.
+    def pad_added_handler(self, src, new_pad):
+        sink_pad = self.convert.get_static_pad("sink")
+        print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
 
-# callback function
-# src is the GstElement which triggered the signal.
-# new_pad is the GstPad that has just been added to the src element
-# This is the pad to which we want to link.
-def pad_added_handler(src, new_pad):
-    sink_pad = data.convert.get_static_pad("sink")
-    print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
+        if sink_pad.is_linked():
+            print("Already linked")
+            return
 
-    if sink_pad.is_linked():
-        print("Already linked")
+        new_pad_caps = new_pad.get_current_caps()
+        new_pad_struct = new_pad_caps.get_structure(0)
+        new_pad_type = new_pad_struct.get_name()
+
+        if not new_pad_type.startswith("audio/x-raw"):
+            print("Type not audio.")
+            return
+
+        #Linking
+        ret = new_pad.link(sink_pad)
+        if ret == Gst.PadLinkReturn.OK:
+            print("Link success")
+        else:
+            print("Link failure")
+
         return
 
-    new_pad_caps = new_pad.get_current_caps()
-    new_pad_struct = new_pad_caps.get_structure(0)
-    new_pad_type = new_pad_struct.get_name()
-
-    if not new_pad_type.startswith("audio/x-raw"):
-        print("Type not audio.")
-        return
-
-    #Linking
-    ret = new_pad.link(sink_pad)
-    if ret == Gst.PadLinkReturn.OK:
-        print("Link success")
-    else:
-        print("Link failure")
-
-    return
 
 def main():
+    # Initialize GStreamer library
+    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
+    Gst.init(None)
+    data = CustomData()
+
     if not data.pipeline or not data.source or not data.convert or not data.resample or not data.sink:
         logger.error("Not all elements could be created")
         sys.exit(1)
@@ -76,7 +81,7 @@ def main():
     #The uridecodebin element comes with several element signals including `pad-added`
     #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
     #Non-blocking
-    data.source.connect("pad-added", pad_added_handler)
+    data.source.connect("pad-added", data.pad_added_handler)
 
     # Grouping all the pipeline data for ease of use in the pad_added_handler callback
     #data = {'source': source, 'convert': convert, 'resample': resample, 'sink': sink, 'pipeline': pipeline,}
@@ -105,7 +110,7 @@ def main():
     # Bus is periodically checked for messages, and callback is called when a message is available
     bus = data.pipeline.get_bus()
     while True:
-        msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
+        msg = bus.timed_pop_filtered(100 * Gst.MSECOND, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
         #Parse message
         if msg:
             if msg.type == Gst.MessageType.ERROR:
@@ -124,10 +129,8 @@ def main():
             else:
                 logger.error("Unexpected message")
                 break
+
+
 # Main section
 if __name__ == '__main__':
-    # Initialize GStreamer library
-    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
-    Gst.init(None)
-    data = CustomData()
     main()
