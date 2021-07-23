@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 class CustomData():
     def __init__(self):
-
         #Create Elements
         #uridecodebin -> Decodes data from a URI into raw media (instantiates source, demuxer, decoder internally)
         self.source = Gst.ElementFactory.make("uridecodebin", "source")
@@ -25,7 +24,6 @@ class CustomData():
         self.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
         #Create Empty pipeline
         self.pipeline = Gst.Pipeline.new("test-pipeline")
-        self.pad_added_handler = pad_added_handler
 
 # callback function
 # src is the GstElement which triggered the signal.
@@ -78,7 +76,7 @@ def main():
     #The uridecodebin element comes with several element signals including `pad-added`
     #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
     #Non-blocking
-    data.source.connect("pad-added", data.pad_added_handler)
+    data.source.connect("pad-added", pad_added_handler)
 
     # Grouping all the pipeline data for ease of use in the pad_added_handler callback
     #data = {'source': source, 'convert': convert, 'resample': resample, 'sink': sink, 'pipeline': pipeline,}
