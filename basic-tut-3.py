@@ -24,34 +24,37 @@ class CustomData():
         self.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
         #Create Empty pipeline
         self.pipeline = Gst.Pipeline.new("test-pipeline")
-    # callback function
-    # src is the GstElement which triggered the signal.
-    # new_pad is the GstPad that has just been added to the src element
-    # This is the pad to which we want to link.
-    def pad_added_handler(self, src, new_pad):
-        sink_pad = self.convert.get_static_pad("sink")
-        print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
 
-        if sink_pad.is_linked():
-            print("Already linked")
-            return
 
-        new_pad_caps = new_pad.get_current_caps()
-        new_pad_struct = new_pad_caps.get_structure(0)
-        new_pad_type = new_pad_struct.get_name()
+# callback function
+# src is the GstElement which triggered the signal.
+# new_pad is the GstPad that has just been added to the src element
+# This is the pad to which we want to link.
 
-        if not new_pad_type.startswith("audio/x-raw"):
-            print("Type not audio.")
-            return
+def pad_added_handler(src, new_pad, data):
+    sink_pad = data.convert.get_static_pad("sink")
+    print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
 
-        #Linking
-        ret = new_pad.link(sink_pad)
-        if ret == Gst.PadLinkReturn.OK:
-            print("Link success")
-        else:
-            print("Link failure")
-
+    if sink_pad.is_linked():
+        print("Already linked")
         return
+
+    new_pad_caps = new_pad.get_current_caps()
+    new_pad_struct = new_pad_caps.get_structure(0)
+    new_pad_type = new_pad_struct.get_name()
+
+    if not new_pad_type.startswith("audio/x-raw"):
+        print("Type not audio.")
+        return
+
+    #Linking
+    ret = new_pad.link(sink_pad)
+    if ret == Gst.PadLinkReturn.OK:
+        print("Link success")
+    else:
+        print("Link failure")
+
+    return
 
 
 def main():
@@ -81,7 +84,7 @@ def main():
     #The uridecodebin element comes with several element signals including `pad-added`
     #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
     #Non-blocking
-    data.source.connect("pad-added", data.pad_added_handler)
+    data.source.connect("pad-added", pad_added_handler, data)
 
     # Grouping all the pipeline data for ease of use in the pad_added_handler callback
     #data = {'source': source, 'convert': convert, 'resample': resample, 'sink': sink, 'pipeline': pipeline,}
