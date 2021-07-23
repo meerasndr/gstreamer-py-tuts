@@ -12,30 +12,27 @@ logging.basicConfig(level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %
 logger = logging.getLogger(__name__)
 
 class CustomData():
-    def __init__(data):
-    # Initialize GStreamer library
-    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
-        Gst.init(None)
+    def __init__(self):
 
         #Create Elements
         #uridecodebin -> Decodes data from a URI into raw media (instantiates source, demuxer, decoder internally)
-        data.source = Gst.ElementFactory.make("uridecodebin", "source")
+        self.source = Gst.ElementFactory.make("uridecodebin", "source")
         #audioconvert -> Convert audio to different formats. Ensures platform interoperability
-        data.convert = Gst.ElementFactory.make("audioconvert", "convert")
+        self.convert = Gst.ElementFactory.make("audioconvert", "convert")
         #audioresample -> Useful for converting between different audio sample rates. Again ensures platform interoperability
-        data.resample = Gst.ElementFactory.make("audioresample", "resample")
+        self.resample = Gst.ElementFactory.make("audioresample", "resample")
         #autoaudiosink -> render the audio stream to the audio card
-        data.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
+        self.sink = Gst.ElementFactory.make("autoaudiosink", "sink")
         #Create Empty pipeline
-        data.pipeline = Gst.Pipeline.new("test-pipeline")
-        data.pad_added_handler = pad_added_handler
+        self.pipeline = Gst.Pipeline.new("test-pipeline")
+        self.pad_added_handler = pad_added_handler
 
 # callback function
 # src is the GstElement which triggered the signal.
 # new_pad is the GstPad that has just been added to the src element
 # This is the pad to which we want to link.
 def pad_added_handler(src, new_pad):
-    sink_pad = d.convert.get_static_pad("sink")
+    sink_pad = data.convert.get_static_pad("sink")
     print(f"Received new pad {new_pad.get_name()} from {src.get_name()}")
 
     if sink_pad.is_linked():
@@ -60,27 +57,28 @@ def pad_added_handler(src, new_pad):
     return
 
 def main():
-    if not d.pipeline or not d.source or not d.convert or not d.resample or not d.sink:
+    if not data.pipeline or not data.source or not data.convert or not data.resample or not data.sink:
         logger.error("Not all elements could be created")
         sys.exit(1)
 
     #Add elements to pipeline, the elements are not linked yet!
-    d.pipeline.add(d.source, d.convert, d.resample, d.sink)
+    data.pipeline.add(data.source, data.convert, data.resample, data.sink)
 
     #Link all elements excluding source (which contains demux, hence dynamic)
-    ret = d.convert.link(d.resample)
-    ret = ret and d.resample.link(d.sink)
+    ret = data.convert.link(data.resample)
+    ret = ret and data.resample.link(data.sink)
     if not ret:
         logger.error("Elements could not be linked")
         sys.exit(1)
 
     #Set URI to play
-    d.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
+    data.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
+    #data.source.props.uri = "https://file-examples-com.github.io/uploads/2020/03/file_example_WEBM_480_900KB.webm"
     #data['source'].props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer_gr.srt"
     #The uridecodebin element comes with several element signals including `pad-added`
     #When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
     #Non-blocking
-    d.source.connect("pad-added", d.pad_added_handler)
+    data.source.connect("pad-added", data.pad_added_handler)
 
     # Grouping all the pipeline data for ease of use in the pad_added_handler callback
     #data = {'source': source, 'convert': convert, 'resample': resample, 'sink': sink, 'pipeline': pipeline,}
@@ -97,7 +95,7 @@ def main():
     # pad-added signals are triggered, callback is executed
     # Once there is a link success, pipeline moves to PAUSED, then to PLAY
 
-    ret = d.pipeline.set_state(Gst.State.PLAYING)
+    ret = data.pipeline.set_state(Gst.State.PLAYING)
     if ret == Gst.StateChangeReturn.FAILURE:
         logger.error("Unable to change state of pipeline to playing")
         sys.exit(1)
@@ -107,7 +105,7 @@ def main():
     # Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
     # Applications only need to set a message-handler on a bus
     # Bus is periodically checked for messages, and callback is called when a message is available
-    bus = d.pipeline.get_bus()
+    bus = data.pipeline.get_bus()
     while True:
         msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
         #Parse message
@@ -118,20 +116,20 @@ def main():
                 logger.error(f"Debugging information: {debug_info if debug_info else 'none'}")
                 break
             elif msg.type == Gst.MessageType.EOS:
-                logger.info("End-Of-Stream reached.")
+                logger.info("End-Of-Stream reachedata.")
                 break
 
             elif msg.type == Gst.MessageType.STATE_CHANGED:
-                if msg.src == d.pipeline:
+                if msg.src == data.pipeline:
                     old_state, new_state, pending_state = msg.parse_state_changed()
                     print(f"Pipeline state changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}")
             else:
-                # This should ideally not be reached
-                logger.error("Unexpected message received.")
+                logger.error("Unexpected message")
                 break
-
-
 # Main section
 if __name__ == '__main__':
-    d = CustomData()
+    # Initialize GStreamer library
+    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
+    Gst.init(None)
+    data = CustomData()
     main()

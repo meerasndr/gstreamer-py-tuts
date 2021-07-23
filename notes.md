@@ -29,3 +29,27 @@
 - manage synchronization for its children
 - Pipeline states: NULL, READY, PAUSED, PLAYING
 - pipelines run in a seprate thread, until stopped or EOS is reached
+
+### Communication
+**Downstream** - data flow from sources to sinks
+**Upstream** - data flow from sinks to sources
+
+#### Buffers
+- objects
+- pass streaming data between elements in the pipeline
+- always travel downstream
+
+#### Events
+- objects
+- sent between elements or from application to elements
+- can travel upstream and downstream
+
+#### Messages
+- objects
+- posted by elements on the pipeline's message bus
+- used to transmit info like: errors, state changes, tags, buffering state(?), redirects
+- usually handled asynchronously by the application in a seprate thread
+
+#### Queries
+- objects(?)
+- applications use queries to request info 
