@@ -23,13 +23,7 @@ pipeline = Gst.parse_launch(
     "playbin uri=https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
 )
 
-# Goal: start playing pipeline
-# element / pipeline states: NULL -> READY -> PAUSED -> PLAYING. When a pipeline is moved to PLAYING state, it goes through all these 4 states internally
-# NULL : Default start(and end) state. No resources allocated
-# READY : Global resources allocated -> opening devices, buffer allocation. Stream is not opened
-# PAUSED: Stream opened, but not being processed. No running clock
-# PLAYING: Stream opened and processing happens -> running clock
-# Below line is non-blocking, and does not need iteration. A separate thread is created, and processing happens on this thread
+# start playing pipeline
 pipeline.set_state(Gst.State.PLAYING)
 
 # wait until EOS or error

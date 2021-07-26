@@ -65,7 +65,6 @@ def pad_added_handler(src, new_pad, data):
 
 def main():
     # Initialize GStreamer library
-    # set up internal path lists, register built-in elements, load standard plugins (GstRegistry)
     Gst.init(None)
     data = CustomData()
 
@@ -91,8 +90,7 @@ def main():
 
     # Set URI to play
     data.source.props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer-480p.webm"
-    # data.source.props.uri = "https://file-examples-com.github.io/uploads/2020/03/file_example_WEBM_480_900KB.webm"
-    # data['source'].props.uri = "https://www.freedesktop.org/software/gstreamer-sdk/data/media/sintel_trailer_gr.srt"
+
     # The uridecodebin element comes with several element signals including `pad-added`
     # When uridecodebin(source) creates a source pad, and emits `pad-added` signal, the callback is invoked
     # Non-blocking
@@ -104,10 +102,6 @@ def main():
         sys.exit(1)
 
     # Listening for messages: Wait for EOS or error
-    # Why is a bus required? Bus takes care of forwarding messages from pipeline (running in a separate thread) to the application
-    # Applications can avoid worrying about communicating with streaming threads / the pipeling directly.
-    # Applications only need to set a message-handler on a bus
-    # Bus is periodically checked for messages, and callback is called when a message is available
     bus = data.pipeline.get_bus()
     while True:
         msg = bus.timed_pop_filtered(
