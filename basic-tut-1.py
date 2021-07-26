@@ -4,9 +4,9 @@ import gi
 import signal
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
-gi.require_version('GLib', '2.0')
-gi.require_version('GObject', '2.0')
-gi.require_version('Gst', '1.0')
+gi.require_version("GLib", "2.0")
+gi.require_version("GObject", "2.0")
+gi.require_version("Gst", "1.0")
 
 from gi.repository import Gst, GObject, GLib
 
@@ -39,8 +39,7 @@ pipeline.set_state(Gst.State.PLAYING)
 # Bus is periodically checked for messages, and callback is called when a message is available
 bus = pipeline.get_bus()
 msg = bus.timed_pop_filtered(
-    Gst.CLOCK_TIME_NONE,
-    Gst.MessageType.ERROR | Gst.MessageType.EOS
+    Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS
 )
 
 # free resources
