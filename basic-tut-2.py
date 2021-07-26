@@ -12,24 +12,26 @@ gi.require_version("Gst", "1.0")
 
 from gi.repository import Gst, GObject, GLib
 
-logging.basicConfig(level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %(message)s")
+logging.basicConfig(
+    level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Initialize GStreamer library-> set up internal path lists, register built-in elements, load standard plugins
 # GstRegistry setup??
 Gst.init(sys.argv[1:])
 
-#Create elements
+# Create elements
 # GstElementFactory -> required to create a GstElement object.
 # Element factories -> are the basic types in a Gst Registry. Describe all plugins and elements GStreamer can create
 # Gst.ElemenFactory.make() = gst_element_factory_find(<factory_name>) and gst_element_factory_create(<factory>, <element_name>)
 # `gst-inspect-1.0 videotestsrc` gives Factory details, Plugin details, Pad templates (source only) and more
 # videotestsrc creates a test video pattern
-#autovideosink displays the video on a window
+# autovideosink displays the video on a window
 
 source = Gst.ElementFactory.make("videotestsrc", "source")
 sink = Gst.ElementFactory.make("autovideosink", "sink")
-#Create empty pipeline
+# Create empty pipeline
 pipeline = Gst.Pipeline.new("test-pipeline")
 print("Pipeline: ", pipeline)
 
@@ -46,7 +48,7 @@ if not source.link(sink):
     sys.exit(1)
 
 
-#set source's properties
+# set source's properties
 source.props.pattern = 1
 
 # Goal: start playing pipeline
@@ -69,9 +71,11 @@ if ret == Gst.StateChangeReturn.FAILURE:
 # Applications only need to set a message-handler on a bus
 # Bus is periodically checked for messages, and callback is called when a message is available
 bus = pipeline.get_bus()
-msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS) # Blocking code
+msg = bus.timed_pop_filtered(
+    Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS
+)  # Blocking code
 
-#Parse message
+# Parse message
 
 if msg:
     if msg.type == Gst.MessageType.ERROR:
@@ -83,5 +87,5 @@ if msg:
         # This should not happen as we only asked for ERRORs and EOS
         logger.error("Unexpected message received.")
 
-#Free stuff
+# Free stuff
 pipeline.set_state(Gst.State.NULL)
