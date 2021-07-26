@@ -26,7 +26,7 @@ class CustomData:
         # How long does this media last, in nanoseconds?
         self.duration = Gst.CLOCK_TIME_NONE
 
-def handle_message(msg):
+def handle_message(msg, data):
     if msg.type == Gst.MessageType.ERROR:
         err, debug_info = msg.parse_error()
         logger.error(f"Error received from element {msg.src.get_name()}: {err.message}")
@@ -63,6 +63,10 @@ def handle_message(msg):
     return
 
 def main():
+    # Initialize GStreamer
+    # Setup internal path lists, plugins, GstRegistry
+    Gst.init(None)
+    data = CustomData()
     if not data.playbin:
         logger.error("Not all elements could be created")
         sys.exit(1)
@@ -85,7 +89,7 @@ def main():
         Gst.MessageType.STATE_CHANGED | Gst.MessageType.ERROR |  \
         Gst.MessageType.EOS | Gst.MessageType.DURATION_CHANGED)
         if msg:
-            handle_message(msg)
+            handle_message(msg, data)
         else:
             if data.playing :
                 ret, current = data.playbin.query_position(Gst.Format.TIME)
@@ -120,8 +124,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # Initialize GStreamer
-    # Setup internal path lists, plugins, GstRegistry
-    Gst.init(None)
-    data = CustomData()
     main()
