@@ -4,7 +4,7 @@ import gi
 import logging
 import signal
 
-signal.signal(signal.SIGINT, signal.SIG_DFL)
+signal.signal(signal.SIGINT, signal.SIG_DFL) #signal.signal(signalnum, handler)
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
 gi.require_version("Gst", "1.0")
