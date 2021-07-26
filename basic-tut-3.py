@@ -2,7 +2,9 @@
 import sys
 import gi
 import logging
+import signal
 
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
 gi.require_version("Gst", "1.0")
@@ -112,26 +114,29 @@ def main():
     # Applications only need to set a message-handler on a bus
     # Bus is periodically checked for messages, and callback is called when a message is available
     bus = data.pipeline.get_bus()
-    while True:
-        msg = bus.timed_pop_filtered(100 * Gst.MSECOND, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
-        #Parse message
-        if msg:
-            if msg.type == Gst.MessageType.ERROR:
-                err, debug_info = msg.parse_error()
-                logger.error(f"Error received from element {msg.src.get_name()}: {err.message}")
-                logger.error(f"Debugging information: {debug_info if debug_info else 'none'}")
-                break
-            elif msg.type == Gst.MessageType.EOS:
-                logger.info("End-Of-Stream reachedata.")
-                break
+    try:
+        while True:
+            msg = bus.timed_pop_filtered(Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.STATE_CHANGED | Gst.MessageType.EOS)
+            #Parse message
+            if msg:
+                if msg.type == Gst.MessageType.ERROR:
+                    err, debug_info = msg.parse_error()
+                    logger.error(f"Error received from element {msg.src.get_name()}: {err.message}")
+                    logger.error(f"Debugging information: {debug_info if debug_info else 'none'}")
+                    break
+                elif msg.type == Gst.MessageType.EOS:
+                    logger.info("End-Of-Stream reachedata.")
+                    break
 
-            elif msg.type == Gst.MessageType.STATE_CHANGED:
-                if msg.src == data.pipeline:
-                    old_state, new_state, pending_state = msg.parse_state_changed()
-                    print(f"Pipeline state changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}")
-            else:
-                logger.error("Unexpected message")
-                break
+                elif msg.type == Gst.MessageType.STATE_CHANGED:
+                    if msg.src == data.pipeline:
+                        old_state, new_state, pending_state = msg.parse_state_changed()
+                        print(f"Pipeline state changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}")
+                else:
+                    logger.error("Unexpected message")
+                    break
+    except KeyboardInterrupt as e:
+        logger.info("Exception")
 
 
 # Main section
