@@ -54,7 +54,6 @@ def print_pad_templates_info(factory):
         else:
             print("       Availability: Unknown\n")
 
-
         if padtemplate.get_caps():
             print("    Capabilities:\n")
             caps = padtemplate.get_caps()
