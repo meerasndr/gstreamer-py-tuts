@@ -66,9 +66,7 @@ def main():
     # Initialize GStreamer library
     Gst.init(None)
     signal.signal(signal.SIGINT, signal.SIG_DFL)  # signal.signal(signalnum, handler)
-
     data = CustomData()
-
     if (
         not data.pipeline
         or not data.source
