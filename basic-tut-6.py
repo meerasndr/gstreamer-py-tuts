@@ -15,15 +15,17 @@ logger = logging.getLogger(__name__)
 
 
 def print_pad_templates_info(factory):
-    print(f"Pad templates for {factory}") #gst_element_factory_get_longname pending
+    print(f"Pad templates for {factory}")  # gst_element_factory_get_longname pending
     if not Gst.ElementFactory.get_num_pad_templates(factory):
         logger.info("None\n")
         return
-    pads = Gst.ElementFactory.get_static_pad_templates(factory) #pads is a list of padtemplates
-    print("Pads",pads)
+    pads = Gst.ElementFactory.get_static_pad_templates(
+        factory
+    )  # pads is a list of padtemplates
+    print("Pads", pads)
     for pad in pads:
         padtemplate = pad.get()
-        #pad = GLib.List.next(pad) #GLib.List is a struct used to represent each element in the doubly linked list
+        # pad = GLib.List.next(pad) #GLib.List is a struct used to represent each element in the doubly linked list
 
         if padtemplate.direction == Gst.PadDirection.SRC:
             logger.info(f"SRC template {padtemplate.name_template}\n")
@@ -41,9 +43,8 @@ def print_pad_templates_info(factory):
         else:
             logger.info("       Availability: Unknown\n")
 
-
         # Pending:
-        '''
+        """
             if (padtemplate->static_caps.string) {
           GstCaps *caps;
           g_print ("    Capabilities:\n");
@@ -51,7 +52,7 @@ def print_pad_templates_info(factory):
           print_caps (caps, "      ");
           gst_caps_unref (caps);
 
-         }'''
+         }"""
 
 
 def main():
@@ -63,6 +64,7 @@ def main():
         sys.exit(1)
     print_pad_templates_info(sourcefactory)
     print_pad_templates_info(sinkfactory)
+
 
 if __name__ == "__main__":
     main()
