@@ -3,9 +3,7 @@
 import sys
 import gi
 import logging
-import signal
 
-signal.signal(signal.SIGINT, signal.SIG_DFL)
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
 gi.require_version("Gst", "1.0")
