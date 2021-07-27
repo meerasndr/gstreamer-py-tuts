@@ -4,7 +4,6 @@ import gi
 import logging
 import signal
 
-signal.signal(signal.SIGINT, signal.SIG_DFL)  # signal.signal(signalnum, handler)
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
 gi.require_version("Gst", "1.0")
@@ -66,6 +65,8 @@ def pad_added_handler(src, new_pad, data):
 def main():
     # Initialize GStreamer library
     Gst.init(None)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)  # signal.signal(signalnum, handler)
+
     data = CustomData()
 
     if (
