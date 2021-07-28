@@ -88,8 +88,32 @@ def main():
     if not sourcefactory or not sinkfactory:
         logger.error("Not all element factories could be created")
         sys.exit(1)
+    # Print information about pad templates of these factories
     print_pad_templates_info(sourcefactory)
     print_pad_templates_info(sinkfactory)
+
+    # Instantiate actual elements using the factories
+    source = sourcefactory.create("source")
+    sink = sinkfactory.create("sink")
+
+    # Creat empty pipeline
+    pipeline = Gst.Pipeline.new("test-pipeline")
+
+    if not pipeline or not source or not sink:
+        logger.error("Not all elements could be created\n")
+        sys.exit(1)
+
+    # Build pipeline
+    # Add elements
+    pipeline.add(source, sink)
+    # Link Pipeline elements
+    ret = source.link(sink)
+    if not ret:
+        logger.error("Elements in the pipeline could not be linked")
+        sys.exit(1)
+
+    print("In NULL state: \n")
+    print_pad_capabilities(sink, "sink")
 
 
 if __name__ == "__main__":
