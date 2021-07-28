@@ -95,6 +95,7 @@ def main():
     # Instantiate actual elements using the factories
     source = sourcefactory.create("source")
     sink = sinkfactory.create("sink")
+    terminate = False
 
     # Creat empty pipeline
     pipeline = Gst.Pipeline.new("test-pipeline")
@@ -114,6 +115,46 @@ def main():
 
     print("In NULL state: \n")
     print_pad_capabilities(sink, "sink")
+
+    # Start playing
+    ret = pipeline.set_state(Gst.State.PLAYING)
+    if not ret:
+        logger.error("Pipeline state could not be changed to playing")
+
+    # setup bus and messages
+    bus = pipeline.get_bus()
+    while not terminate:
+        msg = bus.timed_pop_filtered(
+            Gst.CLOCK_TIME_NONE,
+            Gst.MessageType.ERROR | Gst.MessageType.EOS | Gst.MessageType.STATE_CHANGED
+        )
+
+        if msg:
+            if msg.type == Gst.MessageType.EOS:
+                logger.info("End of stream reached\n")
+                terminate = True
+                break
+            elif msg.type == Gst.MessageType.ERROR:
+                err, debug_info = msg.parse_error()
+                logger.error(
+                    f"Error received from element {msg.src.get_name()}: {err.message}"
+                )
+                logger.error(
+                    f"Debug information {debug_info if debug_info else 'none'}"
+                )
+                terminate = True
+                break
+            elif msg.type == Gst.MessageType.STATE_CHANGED:
+                if msg.src == pipeline:
+                    old_state, new_state, pending_state = msg.parse_state_changed()
+                    logger.info(
+                        f"Pipeline changed from {Gst.Element.state_get_name(old_state)} to {Gst.Element.state_get_name(new_state)}"
+                    )
+                    # Print the current Capabilities of the sink element
+                    print_pad_capabilities(sink, "sink")
+            else:
+                # Ideally should not reach here
+                logger.error("Unknown message")
 
 
 if __name__ == "__main__":

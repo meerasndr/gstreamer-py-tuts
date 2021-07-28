@@ -119,7 +119,7 @@ def main():
                 )
                 break
             elif msg.type == Gst.MessageType.EOS:
-                logger.info("End-Of-Stream reachedata.")
+                logger.info("End-Of-Stream reached.")
                 break
 
             elif msg.type == Gst.MessageType.STATE_CHANGED:
