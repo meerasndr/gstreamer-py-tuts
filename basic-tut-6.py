@@ -14,6 +14,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def print_field(field, value, prefix):
+    str = Gst.value_serialize(value)
+    print("%s %15s: %s\n" % (prefix,  field,  str))
+
+
 def print_caps(caps, prefix):
     if caps.is_any():
         print(f"{prefix}ANY\n")
@@ -25,11 +30,11 @@ def print_caps(caps, prefix):
     for i, val in enumerate(caps):
         structure = caps.get_structure(i)
         print(f"{prefix} {Gst.Structure.get_name(structure)}")
-        # pending:gst_structure_foreach (structure, print_field, (gpointer) pfx);
+        structure.foreach(print_field, prefix)
 
 
 def print_pad_templates_info(factory):
-    print(f"Pad templates for {factory}")  # gst_element_factory_get_longname pending
+    print(f"Pad templates for {factory}")  # pending: gst_element_factory_get_longname
     if not Gst.ElementFactory.get_num_pad_templates(factory):
         logger.info("None\n")
         return
@@ -59,6 +64,10 @@ def print_pad_templates_info(factory):
             caps = padtemplate.get_caps()
             print_caps(caps, "         ")
             print(" ")
+
+
+def print_pad_capabilities(element, pad_name):
+    pass
 
 
 def main():
