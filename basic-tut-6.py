@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def print_field(field, value, prefix):
     str = Gst.value_serialize(value)
-    print("%s %15s: %s\n" % (prefix,  field,  str))
+    print("%s %15s: %s\n" % (prefix, field, str))
 
 
 def print_caps(caps, prefix):
@@ -67,7 +67,18 @@ def print_pad_templates_info(factory):
 
 
 def print_pad_capabilities(element, pad_name):
-    pass
+    # Retrieve pad
+    pad = Gst.Element.get_static_pad(element, pad_name)
+    if not pad:
+        logger.error("Could not retrieve pad %s" % pad_name)
+        return
+
+    caps = Gst.Pad.get_current_caps(pad)
+    if not caps:
+        caps = pad.query_caps(None)
+
+    print("Caps for the %s pad:\n" % pad_name)
+    print_caps(caps, "      ")
 
 
 def main():
