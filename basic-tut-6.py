@@ -2,6 +2,7 @@
 import sys
 import logging
 import gi
+import signal
 
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
@@ -83,6 +84,7 @@ def print_pad_capabilities(element, pad_name):
 
 def main():
     Gst.init(None)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     sourcefactory = Gst.ElementFactory.find("audiotestsrc")
     sinkfactory = Gst.ElementFactory.find("autoaudiosink")
     if not sourcefactory or not sinkfactory:
@@ -126,7 +128,7 @@ def main():
     while not terminate:
         msg = bus.timed_pop_filtered(
             Gst.CLOCK_TIME_NONE,
-            Gst.MessageType.ERROR | Gst.MessageType.EOS | Gst.MessageType.STATE_CHANGED
+            Gst.MessageType.ERROR | Gst.MessageType.EOS | Gst.MessageType.STATE_CHANGED,
         )
 
         if msg:
