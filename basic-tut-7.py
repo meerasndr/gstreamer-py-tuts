@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 def main():
     Gst.init(None)
-    signal.Signal(signal.SIGINT, signal.SIG_DFL)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
     audio_source = Gst.ElementFactory.make("audiotestsrc", "audio_source")
     tee = Gst.ElementFactory.make("tee", "tee")
     audio_queue = Gst.ElementFactory.make("queue", "audio_queue")
@@ -26,7 +26,7 @@ def main():
     audio_sink = Gst.ElementFactory.make("autoaudiosink", "audio_sink")
     video_queue = Gst.ElementFactory.make("queue", "video_queue")
     visual = Gst.ElementFactory.make("wavescope", "visual")
-    video_convert = Gst.ElementFactory.make("videoconvert", "video_sonvert")
+    video_convert = Gst.ElementFactory.make("videoconvert", "video_convert")
     video_sink = Gst.ElementFactory.make("autovideosink", "video_sink")
 
     # Create empty pipeline
@@ -47,4 +47,34 @@ def main():
         logger.error("Not all elements could be created \n")
         sys.exit(1)
 
-    
+    audio_source.set_property("freq", 215.0)
+    visual.set_property("shader", 0)
+    visual.set_property("style", 1)
+
+    pipeline.add(
+        audio_source,
+        tee,
+        audio_queue,
+        audio_convert,
+        audio_resample,
+        audio_sink,
+        video_queue,
+        visual,
+        video_convert,
+        video_sink,
+    )
+    ret_first = audio_source.link(tee)
+    ret_second = audio_queue.link(audio_convert)
+    ret_second = ret_second and audio_convert.link(audio_resample)
+    ret_second = ret_second and audio_resample.link(audio_sink)
+    ret_third = video_queue.link(visual)
+    ret_third = ret_third and visual.link(video_convert)
+    ret_third = ret_third and video_convert(video_sink)
+
+    if not ret_first or not ret_second or not ret_third:
+        logger.error("Elements could not be linked\n")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
