@@ -92,6 +92,14 @@ def main():
         logger.error("Tee could not be linked\n")
         sys.exit(1)
 
+    # Start playing Pipeline
+    pipeline.set_state(Gst.State.PLAYING)
+
+    bus = pipeline.get_bus()
+    msg = bus.timed_pop_filtered(
+        Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR or Gst.MessageType.EOS
+    )
+
 
 if __name__ == "__main__":
     main()
