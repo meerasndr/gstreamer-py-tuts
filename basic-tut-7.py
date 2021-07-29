@@ -51,6 +51,8 @@ def main():
     visual.set_property("shader", 0)
     visual.set_property("style", 1)
 
+    # Add elements to pipeline and link those that can be automatically linked
+    # because they have "Always" pads
     pipeline.add(
         audio_source,
         tee,
@@ -69,10 +71,25 @@ def main():
     ret_second = ret_second and audio_resample.link(audio_sink)
     ret_third = video_queue.link(visual)
     ret_third = ret_third and visual.link(video_convert)
-    ret_third = ret_third and video_convert(video_sink)
+    ret_third = ret_third and video_convert.link(video_sink)
 
     if not ret_first or not ret_second or not ret_third:
         logger.error("Elements could not be linked\n")
+        sys.exit(1)
+    # Manually link the Tee, which has request pads
+    tee_audio_pad = tee.get_request_pad("src_%u")
+    # print(f"Obtained request pad {tee_audio_pad} for audio branch")
+    queue_audio_pad = audio_queue.get_static_pad("sink")
+
+    tee_video_pad = tee.get_request_pad("src_%u")
+    # print(f"Obtained request pad {tee_video_pad} for video branch")
+    queue_video_pad = video_queue.get_static_pad("sink")
+
+    ret_audio = tee_audio_pad.link(queue_audio_pad)
+    ret_video = tee_video_pad.link(queue_video_pad)
+
+    if ret_audio != 0 or ret_video != 0:
+        logger.error("Tee could not be linked\n")
         sys.exit(1)
 
 
