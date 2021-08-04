@@ -38,6 +38,7 @@ class CustomData:
         self.num_samples = (
             None  # number of samples generated so far (for time stamp generation)
         )
+        self.main_loop = None
 
 
 def push_data():
@@ -53,6 +54,10 @@ def stop_feed():
 
 
 def new_sample():
+    pass
+
+
+def error_cb():
     pass
 
 
@@ -134,4 +139,37 @@ def main():
             sys.exit(1)
 
         # Manually link tee, which has request pads
-        
+        tee_audio_pad = data.tee.get_request_pad("src_%u")
+        logger.info(
+            "Obtained request pad for audio branch"
+        )  # To do: add gst_pad_get_name
+        queue_audio_pad = data.audio_queue.get_static_pad("sink")
+
+        tee_video_pad = data.tee.get_request_pad("src_%u")
+        logger.info(
+            "Obtained request pad for video branch"
+        )  # To do: add gst_pad_get_name
+        queue_video_pad = data.video_queue.get_static_pad("sink")
+
+        tee_app_pad = data.tee.get_request_pad("src_%u")
+        logger.info("Obtained request pad for app branch")
+        queue_app_pad = data.app_queue.get_static_pad("sink")
+
+        ret_audio = tee_audio_pad.link(queue_audio_pad)
+        ret_video = tee_video_pad.link(queue_video_pad)
+        ret_app = tee_app_pad.link(queue_app_pad)
+        if ret_audio != 0 or ret_video != 0 or ret_app != 0:
+            logger.error("Tee could not be linked")
+            sys.exit(1)
+
+        # Setup bus and message handlers
+        bus = data.pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message::error", error_cb, data)
+
+        # Play pipeline
+        data.pipeline.set_state(Gst.State.PLAYING)
+
+        # Create a GLib Main loop and set it to return
+        data.main_loop = GObject.MainLoop()
+        data.main_loop.run()
