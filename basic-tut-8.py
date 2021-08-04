@@ -21,9 +21,7 @@ class CustomData:
         self.tee = Gst.ElementFactory.make("tee", "tee")
         self.audio_queue = Gst.ElementFactory.make("queue", "audio_queue")
         self.audio_convert1 = Gst.ElementFactory.make("audioconvert", "audio_convert1")
-        self.audio_resample = Gst.ElementFactory.make(
-            "audio_resample", "audio_resample"
-        )
+        self.audio_resample = Gst.ElementFactory.make("audioresample", "audio_resample")
         self.audio_sink = Gst.ElementFactory.make("autoaudiosink", "audio_sink")
         self.video_queue = Gst.ElementFactory.make("queue", "video_queue")
         self.audio_convert2 = Gst.ElementFactory.make("audioconvert", "audio_convert2")
@@ -33,7 +31,12 @@ class CustomData:
         self.app_queue = Gst.ElementFactory.make("queue", "app_queue")
         self.app_sink = Gst.ElementFactory.make("appsink", "app_sink")
         self.pipeline = Gst.Pipeline.new("test-pipeline")
-        self.a, self.b, self.c, self.d = None  # for waveform generation
+        self.a, self.b, self.c, self.d = (
+            None,
+            None,
+            None,
+            None,
+        )  # for waveform generation
         self.sourceid = None  # to control GSource
         self.num_samples = (
             None  # number of samples generated so far (for time stamp generation)
@@ -62,7 +65,7 @@ def error_cb():
 
 
 def main():
-    Gst.init(sys.argv)
+    Gst.init(None)
     data = CustomData()
     if (
         not data.pipeline
@@ -173,3 +176,7 @@ def main():
         # Create a GLib Main loop and set it to return
         data.main_loop = GObject.MainLoop()
         data.main_loop.run()
+
+
+if __name__ == "__main__":
+    main()
