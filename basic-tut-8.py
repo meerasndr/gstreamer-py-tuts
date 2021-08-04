@@ -57,7 +57,7 @@ def new_sample():
 
 
 def main():
-    Gst.init(None)
+    Gst.init(sys.argv)
     data = CustomData()
     if (
         not data.pipeline
@@ -77,3 +77,61 @@ def main():
     ):
         logger.error("Not all elements could be created")
         sys.exit(1)
+
+        # Configure wavescope
+        data.visual.set_property("shader", 0)
+        data.visual.set_property("style", 0)
+
+        # Configure appsrc
+        sample_rate = 44100
+        info = GstAudio.AudioInfo.set_format(
+            GstAudio.AudioFormat.S16, sample_rate, 1, None
+        )
+        audio_caps = info.GstAudio.InfoToCaps()
+        data.app_source.set_property("caps", audio_caps)
+        data.app_source.set_property("format", Gst.Format.TIME)
+        data.app_source.connect("need-data", start_feed, data)
+        data.app_source.connect("enough-data", stop_feed, data)
+
+        # configure appsink
+        data.app_sink.set_property("emit-signals", True)
+        data.app_sink.set_property("caps", audio_caps)
+        data.app_sink.connect("new-sample", new_sample, data)
+
+        # add elements to pipeline
+        data.pipeline.add(
+            data.app_source,
+            data.tee,
+            data.audio_queue,
+            data.audio_convert1,
+            data.audio_resample,
+            data.audio_sink,
+            data.video_queue,
+            data.audio_convert2,
+            data.visual,
+            data.video_convert,
+            data.video_sink,
+            data.app_queue,
+            data.app_sink,
+        )
+        # Link elements with "Always" pads
+        ret1 = data.app_source.link(data.tee)
+        ret2 = (
+            data.audio_queue.link(data.audio_convert1)
+            and data.audio_convert1.link(data.audio_resample)
+            and data.audio_resample.link(data.audio_sink)
+        )
+        ret3 = (
+            data.video_queue.link(data.audio_convert2)
+            and data.audio_convert2.link(data.visual)
+            and data.visual.link(data.video_convert)
+            and data.video_convert.link(data.video_sink)
+        )
+        ret4 = data.app_queue.link(data.app_sink)
+
+        if not ret1 or not ret2 or not ret3 or not ret4:
+            logger.error("Elements could not be linked")
+            sys.exit(1)
+
+        # Manually link tee, which has request pads
+        
