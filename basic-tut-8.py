@@ -76,12 +76,15 @@ def push_data(data):
 def start_feed(data):
     if data.sourceid == 0:
         print("Start feeding\n")
-        GLib.idle_add(push_data, data)
-        data.sourceid += 1
+        # GLib.idle_add(push_data, data)
+        data.sourceid = gobject.timeout_add(1000, push_data)
 
 
 def stop_feed():
-    pass
+    if data.sourceid != 0:
+        print("Stop feeding\n")
+        gobject.source_remove(data.sourceid)
+        data.sourceid = 0
 
 
 def new_sample():
