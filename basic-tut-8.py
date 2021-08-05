@@ -32,24 +32,52 @@ class CustomData:
         self.app_sink = Gst.ElementFactory.make("appsink", "app_sink")
         self.pipeline = Gst.Pipeline.new("test-pipeline")
         self.a, self.b, self.c, self.d = (
-            None,
-            None,
-            None,
-            None,
+            0,
+            0,
+            0,
+            0,
         )  # for waveform generation
-        self.sourceid = None  # to control GSource
+        self.sourceid = 0  # to control GSource
         self.num_samples = (
-            None  # number of samples generated so far (for time stamp generation)
+            0  # number of samples generated so far (for time stamp generation)
         )
         self.main_loop = None
 
 
-def push_data():
-    pass
+def push_data(data):
+    chunk_size = 1024
+    num_samples = chunk_size / 2  # because each sample is 16 bits
+    # Create a new empty buffer
+    buffer = Gst.Buffer.new_allocate(chunk_size)
+
+    # To-Do: set buffer timestamp and duration
+
+    # Generate some psychedelic waveforms aka make buffer data
+    map = buffer.map(Gst.MapFlags.WRITE)
+    raw = map.data
+    data.c += data.d
+    data.d -= data.c // 1000
+    freq = 1100 + 1000 * data.d
+    for i in range(num_samples):
+        data.a += data.b
+        data.b -= data.a / freq
+        raw[i] = 500 * data.a
+
+    data.num_samples += num_samples
+
+    # Push the buffer into the appsrc
+    ret = data.app_source.emit("push-buffer", buffer)
+    if ret != 0:
+        return false
+
+    return true
 
 
-def start_feed():
-    pass
+def start_feed(data):
+    if data.sourceid == 0:
+        print("Start feeding\n")
+        GLib.idle_add(push_data, data)
+        data.sourceid += 1
 
 
 def stop_feed():
