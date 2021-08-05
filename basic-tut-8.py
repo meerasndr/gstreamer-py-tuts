@@ -79,13 +79,13 @@ def start_feed(object, arg0, data):
     if data.sourceid == 0:
         print("Start feeding\n")
         # GLib.idle_add(push_data, data)
-        data.sourceid = GObject.timeout_add(1000, push_data, data)
+        data.sourceid = GLib.timeout_add(1000, push_data, data)
 
 
-def stop_feed(data):
+def stop_feed(object, data):
     if data.sourceid != 0:
         print("Stop feeding\n")
-        gobject.source_remove(data.sourceid)
+        GObject.source_remove(data.sourceid)
         data.sourceid = 0
 
 
