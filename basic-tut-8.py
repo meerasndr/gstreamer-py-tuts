@@ -55,16 +55,18 @@ def push_data(data):
     # To-Do: set buffer timestamp and duration
 
     # Generate some psychedelic waveforms aka make buffer data
-    map = buffer.map(Gst.MapFlags.WRITE)
-    raw = map.info
-    print("RAW",raw)
+    ret, map_info = buffer.map(Gst.MapFlags.WRITE)
+    raw = [None] * num_samples
+    #raw = list(map_info)
+    raw.append(map_info)
+    #print("Type", type(map_info))
     data.c += data.d
     data.d -= data.c // 1000
     freq = 1100 + 1000 * data.d
     for i in range(num_samples):
         data.a += data.b
-        data.b -= data.a / freq
-        #raw[i] = 500 * data.a
+        data.b -= data.a // freq
+        raw[i] = 500 * data.a
 
     data.num_samples += num_samples
 
@@ -80,7 +82,7 @@ def start_feed(object, arg0, data):
     if data.sourceid == 0:
         print("Start feeding\n")
         # data.sourceid =
-        GLib.timeout_add(1000, push_data, data)
+        GLib.timeout_add(10, push_data, data)
         data.sourceid = 1
 
 
@@ -95,10 +97,9 @@ def new_sample(object, data):
     sample = data.app_sink.emit("pull-sample")
     if sample:
         print("*")
-    else:
-        print("new_sample error")
+        return Gst.FlowReturn.OK
 
-    return 0
+    return Gst.FlowReturn.ERROR
 
 
 def error_cb(bus, msg, data):
