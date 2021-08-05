@@ -57,19 +57,20 @@ def push_data(data):
     # Generate some psychedelic waveforms aka make buffer data
     map = buffer.map(Gst.MapFlags.WRITE)
     raw = map.info
+    print("RAW",raw)
     data.c += data.d
     data.d -= data.c // 1000
     freq = 1100 + 1000 * data.d
     for i in range(num_samples):
         data.a += data.b
         data.b -= data.a / freq
-        # raw[i] = 500 * data.a
+        #raw[i] = 500 * data.a
 
     data.num_samples += num_samples
 
     # Push the buffer into the appsrc
     ret = data.app_source.emit("push-buffer", buffer)
-    if ret != 0:
+    if ret != Gst.FlowReturn.OK:
         return False
 
     return True
@@ -78,7 +79,9 @@ def push_data(data):
 def start_feed(object, arg0, data):
     if data.sourceid == 0:
         print("Start feeding\n")
-        data.sourceid = GLib.timeout_add(1000, push_data, data)
+        # data.sourceid =
+        GLib.timeout_add(1000, push_data, data)
+        data.sourceid = 1
 
 
 def stop_feed(object, data):
@@ -88,16 +91,21 @@ def stop_feed(object, data):
         data.sourceid = 0
 
 
-def new_sample(sample, data):
+def new_sample(object, data):
     sample = data.app_sink.emit("pull-sample")
     if sample:
         print("*")
     else:
         print("new_sample error")
 
+    return 0
 
-def error_cb():
-    pass
+
+def error_cb(bus, msg, data):
+    err, debug_info = msg.parse_error()
+    logger.error(f"Error received from element {msg.src.get_name()}: {err.message}")
+    logger.error(f"Debugging information: {debug_info if debug_info else 'none'}")
+    data.main_loop.quit()
 
 
 def main():
