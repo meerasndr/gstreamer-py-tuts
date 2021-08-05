@@ -78,7 +78,6 @@ def push_data(data):
 def start_feed(object, arg0, data):
     if data.sourceid == 0:
         print("Start feeding\n")
-        # GLib.idle_add(push_data, data)
         data.sourceid = GLib.timeout_add(1000, push_data, data)
 
 
