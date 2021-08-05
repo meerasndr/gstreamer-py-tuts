@@ -7,7 +7,9 @@ import signal
 gi.require_version("GLib", "2.0")
 gi.require_version("GObject", "2.0")
 gi.require_version("Gst", "1.0")
-from gi.repository import GLib, GObject, Gst
+gi.require_version("GstBase", "1.0")
+gi.require_version("GstAudio", "1.0")
+from gi.repository import GLib, GObject, Gst, GstAudio
 
 logging.basicConfig(
     level=logging.DEBUG, format="[%(name)s] [%(levelname)8s] - %(message)s"
@@ -46,49 +48,53 @@ class CustomData:
 
 def push_data(data):
     chunk_size = 1024
-    num_samples = chunk_size / 2  # because each sample is 16 bits
+    num_samples = chunk_size // 2  # because each sample is 16 bits
     # Create a new empty buffer
-    buffer = Gst.Buffer.new_allocate(chunk_size)
+    buffer = Gst.Buffer.new_allocate(None, chunk_size, None)
 
     # To-Do: set buffer timestamp and duration
 
     # Generate some psychedelic waveforms aka make buffer data
     map = buffer.map(Gst.MapFlags.WRITE)
-    raw = map.data
+    raw = map.info
     data.c += data.d
     data.d -= data.c // 1000
     freq = 1100 + 1000 * data.d
     for i in range(num_samples):
         data.a += data.b
         data.b -= data.a / freq
-        raw[i] = 500 * data.a
+        # raw[i] = 500 * data.a
 
     data.num_samples += num_samples
 
     # Push the buffer into the appsrc
     ret = data.app_source.emit("push-buffer", buffer)
     if ret != 0:
-        return false
+        return False
 
-    return true
+    return True
 
 
-def start_feed(data):
+def start_feed(object, arg0, data):
     if data.sourceid == 0:
         print("Start feeding\n")
         # GLib.idle_add(push_data, data)
-        data.sourceid = gobject.timeout_add(1000, push_data)
+        data.sourceid = GObject.timeout_add(1000, push_data, data)
 
 
-def stop_feed():
+def stop_feed(data):
     if data.sourceid != 0:
         print("Stop feeding\n")
         gobject.source_remove(data.sourceid)
         data.sourceid = 0
 
 
-def new_sample():
-    pass
+def new_sample(sample, data):
+    sample = data.app_sink.emit("pull-sample")
+    if sample:
+        print("*")
+    else:
+        print("new_sample error")
 
 
 def error_cb():
@@ -117,96 +123,92 @@ def main():
         logger.error("Not all elements could be created")
         sys.exit(1)
 
-        # Configure wavescope
-        data.visual.set_property("shader", 0)
-        data.visual.set_property("style", 0)
+    # Configure wavescope
+    data.visual.set_property("shader", 0)
+    data.visual.set_property("style", 0)
 
-        # Configure appsrc
-        sample_rate = 44100
-        info = GstAudio.AudioInfo.set_format(
-            GstAudio.AudioFormat.S16, sample_rate, 1, None
-        )
-        audio_caps = info.GstAudio.InfoToCaps()
-        data.app_source.set_property("caps", audio_caps)
-        data.app_source.set_property("format", Gst.Format.TIME)
-        data.app_source.connect("need-data", start_feed, data)
-        data.app_source.connect("enough-data", stop_feed, data)
+    # Configure appsrc
+    sample_rate = 44100
+    info = GstAudio.AudioInfo()
+    info.set_format(GstAudio.AudioFormat.S16, sample_rate, 1, None)
+    audio_caps = info.to_caps()
+    data.app_source.set_property("caps", audio_caps)
+    data.app_source.set_property("format", Gst.Format.TIME)
+    data.app_source.connect("need-data", start_feed, data)
+    data.app_source.connect("enough-data", stop_feed, data)
 
-        # configure appsink
-        data.app_sink.set_property("emit-signals", True)
-        data.app_sink.set_property("caps", audio_caps)
-        data.app_sink.connect("new-sample", new_sample, data)
+    # configure appsink
+    data.app_sink.set_property("emit-signals", True)
+    data.app_sink.set_property("caps", audio_caps)
+    data.app_sink.connect("new-sample", new_sample, data)
 
-        # add elements to pipeline
-        data.pipeline.add(
-            data.app_source,
-            data.tee,
-            data.audio_queue,
-            data.audio_convert1,
-            data.audio_resample,
-            data.audio_sink,
-            data.video_queue,
-            data.audio_convert2,
-            data.visual,
-            data.video_convert,
-            data.video_sink,
-            data.app_queue,
-            data.app_sink,
-        )
-        # Link elements with "Always" pads
-        ret1 = data.app_source.link(data.tee)
-        ret2 = (
-            data.audio_queue.link(data.audio_convert1)
-            and data.audio_convert1.link(data.audio_resample)
-            and data.audio_resample.link(data.audio_sink)
-        )
-        ret3 = (
-            data.video_queue.link(data.audio_convert2)
-            and data.audio_convert2.link(data.visual)
-            and data.visual.link(data.video_convert)
-            and data.video_convert.link(data.video_sink)
-        )
-        ret4 = data.app_queue.link(data.app_sink)
+    # add elements to pipeline
+    data.pipeline.add(
+        data.app_source,
+        data.tee,
+        data.audio_queue,
+        data.audio_convert1,
+        data.audio_resample,
+        data.audio_sink,
+        data.video_queue,
+        data.audio_convert2,
+        data.visual,
+        data.video_convert,
+        data.video_sink,
+        data.app_queue,
+        data.app_sink,
+    )
+    # Link elements with "Always" pads
+    ret1 = data.app_source.link(data.tee)
+    ret2 = (
+        data.audio_queue.link(data.audio_convert1)
+        and data.audio_convert1.link(data.audio_resample)
+        and data.audio_resample.link(data.audio_sink)
+    )
+    ret3 = (
+        data.video_queue.link(data.audio_convert2)
+        and data.audio_convert2.link(data.visual)
+        and data.visual.link(data.video_convert)
+        and data.video_convert.link(data.video_sink)
+    )
+    ret4 = data.app_queue.link(data.app_sink)
 
-        if not ret1 or not ret2 or not ret3 or not ret4:
-            logger.error("Elements could not be linked")
-            sys.exit(1)
+    if not ret1 or not ret2 or not ret3 or not ret4:
+        logger.error("Elements could not be linked")
+        sys.exit(1)
 
-        # Manually link tee, which has request pads
-        tee_audio_pad = data.tee.get_request_pad("src_%u")
-        logger.info(
-            "Obtained request pad for audio branch"
-        )  # To do: add gst_pad_get_name
-        queue_audio_pad = data.audio_queue.get_static_pad("sink")
+    # Manually link tee, which has request pads
+    tee_audio_pad = data.tee.get_request_pad("src_%u")
+    logger.info("Obtained request pad for audio branch")  # To do: add gst_pad_get_name
+    queue_audio_pad = data.audio_queue.get_static_pad("sink")
 
-        tee_video_pad = data.tee.get_request_pad("src_%u")
-        logger.info(
-            "Obtained request pad for video branch"
-        )  # To do: add gst_pad_get_name
-        queue_video_pad = data.video_queue.get_static_pad("sink")
+    tee_video_pad = data.tee.get_request_pad("src_%u")
+    logger.info("Obtained request pad for video branch")  # To do: add gst_pad_get_name
+    queue_video_pad = data.video_queue.get_static_pad("sink")
 
-        tee_app_pad = data.tee.get_request_pad("src_%u")
-        logger.info("Obtained request pad for app branch")
-        queue_app_pad = data.app_queue.get_static_pad("sink")
+    tee_app_pad = data.tee.get_request_pad("src_%u")
+    logger.info("Obtained request pad for app branch")
+    queue_app_pad = data.app_queue.get_static_pad("sink")
 
-        ret_audio = tee_audio_pad.link(queue_audio_pad)
-        ret_video = tee_video_pad.link(queue_video_pad)
-        ret_app = tee_app_pad.link(queue_app_pad)
-        if ret_audio != 0 or ret_video != 0 or ret_app != 0:
-            logger.error("Tee could not be linked")
-            sys.exit(1)
+    ret_audio = tee_audio_pad.link(queue_audio_pad)
+    ret_video = tee_video_pad.link(queue_video_pad)
+    ret_app = tee_app_pad.link(queue_app_pad)
+    if ret_audio != 0 or ret_video != 0 or ret_app != 0:
+        logger.error("Tee could not be linked")
+        sys.exit(1)
 
-        # Setup bus and message handlers
-        bus = data.pipeline.get_bus()
-        bus.add_signal_watch()
-        bus.connect("message::error", error_cb, data)
+    # Setup bus and message handlers
+    bus = data.pipeline.get_bus()
+    bus.add_signal_watch()
+    bus.connect("message::error", error_cb, data)
 
-        # Play pipeline
-        data.pipeline.set_state(Gst.State.PLAYING)
+    # Play pipeline
+    data.pipeline.set_state(Gst.State.PLAYING)
+    print("Pipeline play")
 
-        # Create a GLib Main loop and set it to return
-        data.main_loop = GObject.MainLoop()
-        data.main_loop.run()
+    # Create a GLib Main loop and set it to return
+    data.main_loop = GLib.MainLoop()
+    data.main_loop.run()
 
 
 if __name__ == "__main__":
