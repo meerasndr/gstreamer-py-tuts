@@ -48,15 +48,16 @@ class CustomData:
 
 def push_data(data):
     chunk_size = 1024
+    sample_rate = 44100
     num_samples = chunk_size // 2  # because each sample is 16 bits
     # Create a new empty buffer
     buffer = Gst.Buffer.new_allocate(None, chunk_size, None)
-
-    # To-Do: set buffer timestamp and duration
-    
+    buffer.pts = Gst.util_uint64_scale(data.num_samples, Gst.SECOND, sample_rate)
+    buffer.duration = Gst.util_uint64_scale(num_samples, Gst.SECOND, sample_rate)
     # Generate some psychedelic waveforms aka make buffer data
     ret, map_info = buffer.map(Gst.MapFlags.WRITE)
-    raw = map_info.data
+    print("map_info", map_info)
+    raw = buffer.data
     #print("Raw:", raw)
     print("Raw Type", type(raw))
     raw = list(raw)
@@ -68,12 +69,12 @@ def push_data(data):
     for i in range(num_samples):
         data.a += data.b
         data.b -= data.a // freq
-        raw[i] = int(500 * data.a)
+        raw[i] = 500 * data.a
 
     data.num_samples += num_samples
 
     # Push the buffer into the appsrc
-    ret = data.app_source.emit("push-buffer", buffer)
+    ret = data.app_source.emit("push-buffer", buffer) # push-buffer is an app_source signal
     if ret != Gst.FlowReturn.OK:
         return False
 
