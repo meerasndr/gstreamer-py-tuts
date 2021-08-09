@@ -53,20 +53,22 @@ def push_data(data):
     buffer = Gst.Buffer.new_allocate(None, chunk_size, None)
 
     # To-Do: set buffer timestamp and duration
-
+    
     # Generate some psychedelic waveforms aka make buffer data
     ret, map_info = buffer.map(Gst.MapFlags.WRITE)
-    raw = [None] * num_samples
-    #raw = list(map_info)
-    raw.append(map_info)
-    #print("Type", type(map_info))
+    raw = map_info.data
+    #print("Raw:", raw)
+    print("Raw Type", type(raw))
+    raw = list(raw)
+    #print("Raw:", raw)
+    print("Raw Type", type(raw))
     data.c += data.d
     data.d -= data.c // 1000
     freq = 1100 + 1000 * data.d
     for i in range(num_samples):
         data.a += data.b
         data.b -= data.a // freq
-        raw[i] = 500 * data.a
+        raw[i] = int(500 * data.a)
 
     data.num_samples += num_samples
 
