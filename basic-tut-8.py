@@ -56,19 +56,17 @@ def push_data(data):
     buffer.duration = Gst.util_uint64_scale(num_samples, Gst.SECOND, sample_rate)
     # Generate some psychedelic waveforms aka make buffer data
     ret, map_info = buffer.map(Gst.MapFlags.WRITE)
-    print("map_info", map_info)
-    raw = buffer.data
-    #print("Raw:", raw)
-    print("Raw Type", type(raw))
+    #print("map_info", map_info)
+    raw = map_info.data
+    #print("Raw Type", type(raw))
     raw = list(raw)
-    #print("Raw:", raw)
-    print("Raw Type", type(raw))
+    #print("Raw Type", type(raw))
     data.c += data.d
-    data.d -= data.c // 1000
+    data.d -= (data.c // 1000)
     freq = 1100 + 1000 * data.d
     for i in range(num_samples):
         data.a += data.b
-        data.b -= data.a // freq
+        data.b -= (data.a // freq)
         raw[i] = 500 * data.a
 
     data.num_samples += num_samples
@@ -85,19 +83,18 @@ def start_feed(object, arg0, data):
     if data.sourceid == 0:
         print("Start feeding\n")
         # data.sourceid =
-        GLib.timeout_add(10, push_data, data)
-        data.sourceid = 1
+        data.sourceid = GLib.idle_add(push_data, data)
 
 
 def stop_feed(object, data):
     if data.sourceid != 0:
         print("Stop feeding\n")
-        GObject.source_remove(data.sourceid)
+        GLib.source_remove(data.sourceid)
         data.sourceid = 0
 
 
-def new_sample(object, data):
-    sample = data.app_sink.emit("pull-sample")
+def new_sample(sink, data):
+    sample = sink.emit("pull-sample")
     if sample:
         print("*")
         return Gst.FlowReturn.OK
@@ -115,6 +112,8 @@ def error_cb(bus, msg, data):
 def main():
     Gst.init(None)
     data = CustomData()
+    data.b = 1
+    data.d = 1
     if (
         not data.pipeline
         or not data.app_source
@@ -217,8 +216,8 @@ def main():
     data.pipeline.set_state(Gst.State.PLAYING)
     print("Pipeline play")
 
-    # Create a GLib Main loop and set it to return
-    data.main_loop = GLib.MainLoop()
+    # Create a GLib Main loop and set it to run
+    data.main_loop = GLib.MainLoop(None)
     data.main_loop.run()
 
 
