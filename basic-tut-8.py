@@ -48,26 +48,31 @@ class CustomData:
 
 def push_data(data):
     chunk_size = 1024
-    sample_rate = 44100
+    sample_rate = 44100 #88200 bytes
     num_samples = chunk_size // 2  # because each sample is 16 bits
     # Create a new empty buffer
     buffer = Gst.Buffer.new_allocate(None, chunk_size, None)
     buffer.pts = Gst.util_uint64_scale(data.num_samples, Gst.SECOND, sample_rate)
     buffer.duration = Gst.util_uint64_scale(num_samples, Gst.SECOND, sample_rate)
     # Generate some psychedelic waveforms aka make buffer data
+    #TO-DO: Triagnle wave instead of sine
     ret, map_info = buffer.map(Gst.MapFlags.WRITE)
-    #print("map_info", map_info)
     raw = map_info.data
-    #print("Raw Type", type(raw))
     raw = list(raw)
-    #print("Raw Type", type(raw))
-    data.c += data.d
-    data.d -= (data.c // 1000)
-    freq = 1100 + 1000 * data.d
-    for i in range(num_samples):
-        data.a += data.b
-        data.b -= (data.a // freq)
-        raw[i] = 500 * data.a
+    #data.c += data.d
+    #data.d -= (data.c // 1000)
+    #freq = 1100 + 1000 * data.d
+    #for i in range(num_samples):
+    #    data.a += data.b
+    #    data.b -= (data.a // freq)
+    #    raw[i] = 500 * data.a
+    amplitude = 2
+    for direction in (1, -1):
+        for i in range(num_samples):
+            raw[i] = i * (amplitude / num_samples) * direction
+        #for i in range(num_samples):
+        #    raw[i] = (amplitude - (i * (amplitude/num_samples))) * direction
+
 
     data.num_samples += num_samples
 
@@ -94,7 +99,7 @@ def stop_feed(object, data):
 
 
 def new_sample(sink, data):
-    sample = sink.emit("pull-sample")
+    sample = sink.emit("pull-sample") #
     if sample:
         print("*")
         return Gst.FlowReturn.OK
@@ -138,9 +143,9 @@ def main():
     data.visual.set_property("style", 0)
 
     # Configure appsrc
-    sample_rate = 44100
+    sample_rate = 44100 # = 88200 bytes
     info = GstAudio.AudioInfo()
-    info.set_format(GstAudio.AudioFormat.S16, sample_rate, 1, None)
+    info.set_format(GstAudio.AudioFormat.S16, sample_rate, 1, None) #Signed16LittleEndian
     audio_caps = info.to_caps()
     data.app_source.set_property("caps", audio_caps)
     data.app_source.set_property("format", Gst.Format.TIME)
@@ -149,7 +154,7 @@ def main():
 
     # configure appsink
     data.app_sink.set_property("emit-signals", True)
-    data.app_sink.set_property("caps", audio_caps)
+    data.app_sink.set_property("caps", audio_caps) #try removing this and see what happenss
     data.app_sink.connect("new-sample", new_sample, data)
 
     # add elements to pipeline
@@ -207,6 +212,7 @@ def main():
         logger.error("Tee could not be linked")
         sys.exit(1)
 
+    # TO DO : What is happening here?
     # Setup bus and message handlers
     bus = data.pipeline.get_bus()
     bus.add_signal_watch()
