@@ -49,42 +49,145 @@ class CustomData:
 
 def push_data(data):
     chunk_size = 1024
-    sample_rate = 44100 #88200 bytes
+    sample_rate = 44100  # 88200 bytes
     num_samples = chunk_size // 2  # because each sample is 16 bits
     # Create a new empty buffer
     buffer = Gst.Buffer.new_allocate(None, chunk_size, None)
     buffer.pts = Gst.util_uint64_scale(data.num_samples, Gst.SECOND, sample_rate)
     buffer.duration = Gst.util_uint64_scale(num_samples, Gst.SECOND, sample_rate)
     # Generate some psychedelic waveforms aka make buffer data
-    #TO-DO: Triagnle wave instead of sine
+    # TO-DO: Triagnle wave instead of sine
     ret, map_info = buffer.map(Gst.MapFlags.WRITE)
     raw = map_info.data
     raw = list(raw)
-    #data.c += data.d
-    #data.d -= (data.c // 1000)
-    #freq = 1100 + 1000 * data.d
-    #for i in range(num_samples):
+    # data.c += data.d
+    # data.d -= (data.c // 1000)
+    # freq = 1100 + 1000 * data.d
+    # for i in range(num_samples):
     #    data.a += data.b
     #    data.b -= (data.a // freq)
     #    raw[i] = 500 * data.a
-    #amplitude = 1
-    #for direction in (1, -1):
+    # amplitude = 1
+    # for direction in (1, -1):
     #    for i in range(chunk_size):
     #        raw[i] = int(i * (amplitude // num_samples) * direction).to_bytes(2, byteorder='little')
-        #for i in range(num_samples):
-        #    raw[i] = int((amplitude - (i * (amplitude // num_samples))) * direction).to_bytes(2, byteorder='little')
-    triangle_list = [0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.48, 0.46, 0.44, 0.42, 0.4, 0.38, 0.36, 0.33999999999999997, 0.32, 0.3, 0.28, 0.26, 0.24, 0.21999999999999997, 0.2, 0.18, 0.15999999999999998, 0.14, 0.12, 0.09999999999999998, 0.08000000000000002, 0.06, 0.03999999999999998, 0.020000000000000018, -0.0, -0.02, -0.04, -0.06, -0.08, -0.1, -0.12, -0.14, -0.16, -0.18, -0.2, -0.22, -0.24, -0.26, -0.28, -0.3, -0.32, -0.34, -0.36, -0.38, -0.4, -0.42, -0.44, -0.46, -0.48, -0.5, -0.48, -0.46, -0.44, -0.42, -0.4, -0.38, -0.36, -0.33999999999999997, -0.32, -0.3, -0.28, -0.26, -0.24, -0.21999999999999997, -0.2, -0.18, -0.15999999999999998, -0.14, -0.12, -0.09999999999999998, -0.08000000000000002, -0.06, -0.03999999999999998, -0.020000000000000018]
+    # for i in range(num_samples):
+    #    raw[i] = int((amplitude - (i * (amplitude // num_samples))) * direction).to_bytes(2, byteorder='little')
+    triangle_list = [
+        0.0,
+        0.02,
+        0.04,
+        0.06,
+        0.08,
+        0.1,
+        0.12,
+        0.14,
+        0.16,
+        0.18,
+        0.2,
+        0.22,
+        0.24,
+        0.26,
+        0.28,
+        0.3,
+        0.32,
+        0.34,
+        0.36,
+        0.38,
+        0.4,
+        0.42,
+        0.44,
+        0.46,
+        0.48,
+        0.5,
+        0.48,
+        0.46,
+        0.44,
+        0.42,
+        0.4,
+        0.38,
+        0.36,
+        0.33999999999999997,
+        0.32,
+        0.3,
+        0.28,
+        0.26,
+        0.24,
+        0.21999999999999997,
+        0.2,
+        0.18,
+        0.15999999999999998,
+        0.14,
+        0.12,
+        0.09999999999999998,
+        0.08000000000000002,
+        0.06,
+        0.03999999999999998,
+        0.020000000000000018,
+        -0.0,
+        -0.02,
+        -0.04,
+        -0.06,
+        -0.08,
+        -0.1,
+        -0.12,
+        -0.14,
+        -0.16,
+        -0.18,
+        -0.2,
+        -0.22,
+        -0.24,
+        -0.26,
+        -0.28,
+        -0.3,
+        -0.32,
+        -0.34,
+        -0.36,
+        -0.38,
+        -0.4,
+        -0.42,
+        -0.44,
+        -0.46,
+        -0.48,
+        -0.5,
+        -0.48,
+        -0.46,
+        -0.44,
+        -0.42,
+        -0.4,
+        -0.38,
+        -0.36,
+        -0.33999999999999997,
+        -0.32,
+        -0.3,
+        -0.28,
+        -0.26,
+        -0.24,
+        -0.21999999999999997,
+        -0.2,
+        -0.18,
+        -0.15999999999999998,
+        -0.14,
+        -0.12,
+        -0.09999999999999998,
+        -0.08000000000000002,
+        -0.06,
+        -0.03999999999999998,
+        -0.020000000000000018,
+    ]
     j = 0
     for i in range(0, len(triangle_list)):
-        #raw[i] = triangle_list[j]
-        raw[i] = bytearray(struct.pack("f",triangle_list[j]))
+        # raw[i] = triangle_list[j]
+        raw[i] = bytearray(struct.pack("f", triangle_list[j]))
 
         j += 1
 
     data.num_samples += num_samples
 
     # Push the buffer into the appsrc
-    ret = data.app_source.emit("push-buffer", buffer) # push-buffer is an app_source signal
+    ret = data.app_source.emit(
+        "push-buffer", buffer
+    )  # push-buffer is an app_source signal
     if ret != Gst.FlowReturn.OK:
         return False
 
@@ -106,7 +209,7 @@ def stop_feed(object, data):
 
 
 def new_sample(sink, data):
-    sample = sink.emit("pull-sample") #
+    sample = sink.emit("pull-sample")  #
     if sample:
         print("*")
         return Gst.FlowReturn.OK
@@ -150,9 +253,11 @@ def main():
     data.visual.set_property("style", 0)
 
     # Configure appsrc
-    sample_rate = 44100 # = 88200 bytes
+    sample_rate = 44100  # = 88200 bytes
     info = GstAudio.AudioInfo()
-    info.set_format(GstAudio.AudioFormat.S16, sample_rate, 1, None) #Signed16LittleEndian
+    info.set_format(
+        GstAudio.AudioFormat.S16, sample_rate, 1, None
+    )  # Signed16LittleEndian
     audio_caps = info.to_caps()
     data.app_source.set_property("caps", audio_caps)
     data.app_source.set_property("format", Gst.Format.TIME)
@@ -161,7 +266,9 @@ def main():
 
     # configure appsink
     data.app_sink.set_property("emit-signals", True)
-    data.app_sink.set_property("caps", audio_caps) #try removing this and see what happenss
+    data.app_sink.set_property(
+        "caps", audio_caps
+    )  # try removing this and see what happenss
     data.app_sink.connect("new-sample", new_sample, data)
 
     # add elements to pipeline
