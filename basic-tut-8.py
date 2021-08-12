@@ -66,13 +66,17 @@ def push_data(data):
     #    data.a += data.b
     #    data.b -= (data.a // freq)
     #    raw[i] = 500 * data.a
-    amplitude = 2
-    for direction in (1, -1):
-        for i in range(num_samples):
-            raw[i] = i * (amplitude / num_samples) * direction
+    #amplitude = 1
+    #for direction in (1, -1):
+    #    for i in range(chunk_size):
+    #        raw[i] = int(i * (amplitude // num_samples) * direction).to_bytes(2, byteorder='little')
         #for i in range(num_samples):
-        #    raw[i] = (amplitude - (i * (amplitude/num_samples))) * direction
-
+        #    raw[i] = int((amplitude - (i * (amplitude // num_samples))) * direction).to_bytes(2, byteorder='little')
+    triangle_list = [0.0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.48, 0.46, 0.44, 0.42, 0.4, 0.38, 0.36, 0.33999999999999997, 0.32, 0.3, 0.28, 0.26, 0.24, 0.21999999999999997, 0.2, 0.18, 0.15999999999999998, 0.14, 0.12, 0.09999999999999998, 0.08000000000000002, 0.06, 0.03999999999999998, 0.020000000000000018, -0.0, -0.02, -0.04, -0.06, -0.08, -0.1, -0.12, -0.14, -0.16, -0.18, -0.2, -0.22, -0.24, -0.26, -0.28, -0.3, -0.32, -0.34, -0.36, -0.38, -0.4, -0.42, -0.44, -0.46, -0.48, -0.5, -0.48, -0.46, -0.44, -0.42, -0.4, -0.38, -0.36, -0.33999999999999997, -0.32, -0.3, -0.28, -0.26, -0.24, -0.21999999999999997, -0.2, -0.18, -0.15999999999999998, -0.14, -0.12, -0.09999999999999998, -0.08000000000000002, -0.06, -0.03999999999999998, -0.020000000000000018]
+    j = 0
+    for i in range(0, len(triangle_list)):
+        raw[i] = triangle_list[j]
+        j += 1
 
     data.num_samples += num_samples
 
