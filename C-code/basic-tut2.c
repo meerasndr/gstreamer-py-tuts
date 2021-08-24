@@ -38,7 +38,6 @@ int main(int argc, char *argv[]){
         printf("End of stream reached.\n");
         break;
       case GST_MESSAGE_ERROR:
-
         gst_message_parse_error(msg, &err, &dbg_info);
         printf("Error received: %s \n", err->message);
         printf("Error from: %s\n", GST_OBJECT_NAME(msg->src));

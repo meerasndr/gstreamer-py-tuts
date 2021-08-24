@@ -17,3 +17,5 @@ int main(int argc, char* argv[]){
   gst_object_unref(pipeline);
   return 0;
 }
+// Two types of objects: Objects derived from GObjects and
+// GstMiniObject
