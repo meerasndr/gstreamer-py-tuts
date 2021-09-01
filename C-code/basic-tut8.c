@@ -105,5 +105,42 @@ if(link1 || link2 || link3 || link4){
   return -1;
 }
 
+//Manual linking with tee pads
+GstPad *tee_audio_pad = gst_element_request_pad_simple(data.tee, "src_%u");
+GstPad *queue_audio_pad = gst_element_get_static_pad(data.audio_queue, "sink");
+
+GstPad *tee_video_pad = gst_element_request_pad_simple(data.tee, "src_%u");
+GstPad *queue_video_pad = gst_element_get_static_pad(data.video_queue, "sink");
+
+GstPad *tee_app_pad = gst_element_request_pad_simple(data.tee, "src_%u");
+GstPad *queue_app_pad = gst_element_get_static_pad(data.app_queue, "sink");
+gst_pad_link(tee_audio_pad, queue_audio_pad);
+gst_pad_link(tee_video_pad, queue_video_pad);
+gst_pad_link(tee_app_pad, queue_app_pad);
+
+gst_object_unref(queue_audio_pad);
+gst_object_unref(queue_video_pad);
+gst_object_unref(queue_app_pad);
+
+
+//Connect bus to error-handler callback
+//Signals to notify application of error events
+GstBus *bus = gst_element_get_bus(data.pipeline);
+gst_bus_add_signal_watch(bus);
+g_signal_connect(G_OBJECT(bus), "message::error", (GCallback)error_cb, &data);
+gst_object_unref(bus);
+
+//Start playing pipeline
+gst_element_set_state(data.pipeline, GST_STATE_PLAYING);
+
+//GLib main loop
+data.main_loop = g_main_loop_new(NULL, FALSE);
+g_main_loop_run(data.main_loop);
+
+
+// Freeing resources
+gst_element_set_state(data.pipeline, GST_STATE_NULL);
+gst_object_unref(data.pipeline);
+
 return 0;
 }
