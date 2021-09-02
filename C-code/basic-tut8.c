@@ -2,8 +2,8 @@
 #include<gst/audio/audio.h>
 #include <string.h>
 
-#define SAMPLE_RATE 44100
 #define CHUNK_SIZE 1024
+#define SAMPLE_RATE 44100
 
 typedef struct _CustomData{
   GstElement *app_source;
@@ -26,7 +26,44 @@ typedef struct _CustomData{
   guint sourceid;
 } CustomData;
 
+// Super-basic square wave
 static gboolean pushdata(CustomData *data){
+  GstBuffer *buffer;
+  GstFlowReturn ret;
+  GstMapInfo map;
+  gint16 *raw;
+  gint num_samples = CHUNK_SIZE / 2; // Each sample is 16 bits = 2 bytes
+  gfloat freq;
+
+  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE);
+  //Timestamp and duration for buffer
+  GST_BUFFER_TIMESTAMP(buffer) = gst_util_uint64_scale(data->num_samples, GST_SECOND, SAMPLE_RATE);
+  GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale(num_samples, GST_SECOND, SAMPLE_RATE);
+
+  // Generating waveforms
+  gst_buffer_map (buffer, &map, GST_MAP_WRITE);
+  raw = (gint16*)map.data;
+  data->c += data->d;
+  data->d -= data->c / 1000;
+  freq = 1100 + 1000 * data->d;
+  for(int i = 0; i < num_samples; i++){
+    data->a += data->b;
+    data->b -= data->a / freq;
+    raw[i] = (gint16)(data->b);
+  }
+  gst_buffer_unmap (buffer, &map);
+  data->num_samples += num_samples * 2;
+
+  g_signal_emit_by_name(data->app_source, "push-buffer", buffer, &ret);
+  gst_buffer_unref(buffer);
+
+  if (ret != GST_FLOW_OK){
+    return FALSE;
+  }
+  return TRUE;
+}
+// Sine wave
+/*static gboolean pushdata(CustomData *data){
   GstBuffer *buffer;
   GstFlowReturn ret;
   GstMapInfo map;
@@ -50,15 +87,17 @@ static gboolean pushdata(CustomData *data){
     data->b -= data->a / freq;
     raw[i] = (gint16)(500 * data->a);
   }
+  gst_buffer_unmap (buffer, &map);
+  data->num_samples += num_samples;
 
   g_signal_emit_by_name(data->app_source, "push-buffer", buffer, &ret);
+  gst_buffer_unref(buffer);
 
   if (ret != GST_FLOW_OK){
     return FALSE;
   }
-  gst_buffer_unref(buffer);
   return TRUE;
-}
+}*/
 
 static void start_feed(GstElement *source, guint size, CustomData *data){
   if(data->sourceid == 0){
@@ -75,15 +114,15 @@ static void stop_feed(GstElement *source, CustomData *data){
   }
 }
 
-static gboolean new_sample(GstElement *sink, CustomData *data){
+static GstFlowReturn new_sample(GstElement *sink, CustomData *data){
   GstSample *sample;
   g_signal_emit_by_name(sink, "pull-sample", &sample);
   if(sample){
     g_print("*");
     gst_sample_unref(sample);
-    return TRUE;
+    return GST_FLOW_OK;
   }
-  return FALSE;
+  return GST_FLOW_ERROR;
 }
 static void error_cb(GstBus *bus, GstMessage *msg, CustomData *data){
   GError *err;
@@ -103,6 +142,9 @@ int main(int argc, char *argv[]){
   gst_init(&argc, &argv);
   CustomData data;
   GstAudioInfo info;
+  memset(&data, 0, sizeof(data));
+  data.b = 1;
+  data.d = 1;
   data.app_source = gst_element_factory_make("appsrc", "audio_source");
   data.tee = gst_element_factory_make("tee", "tee");
   data.audio_queue = gst_element_factory_make("queue", "audio_queue");
@@ -122,6 +164,7 @@ if(!data.app_source || !data.tee || !data.audio_queue || !data.audio_convert1 ||
   g_printerr("All Elements could not be created \n");
   return -1;
 }
+
   // configure wavescope visual
   g_object_set (data.visual, "shader", 0, "style", 0, NULL);
 
