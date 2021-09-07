@@ -102,8 +102,15 @@ if(!data.appsrc || !data.videoconvert || !data.autovideosink || !data.pipeline){
 }
 
 //configure appsrc caps
-gst_video_info_set_format(&info, GST_VIDEO_FORMAT_RGB, 1024, 768);
-GstCaps *video_caps = gst_video_info_to_caps(&info);
+//gst_video_info_set_format(&info, GST_VIDEO_FORMAT_RGB, 1024, 768);
+//GstCaps *video_caps = gst_video_info_to_caps(&info);
+GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
+     "format", G_TYPE_STRING, "RGB",
+     "framerate", GST_TYPE_FRACTION, 25, 1,
+     "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+     "width", G_TYPE_INT, 1280,
+     "height", G_TYPE_INT, 768,
+     NULL);
 g_object_set(data.appsrc, "caps", video_caps, "format", GST_FORMAT_TIME, NULL);
 
 // configure appsrc signal handler
