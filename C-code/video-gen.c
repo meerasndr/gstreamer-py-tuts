@@ -1,6 +1,7 @@
 #include<gst/gst.h>
 #include<gst/video/video.h>
 #include<string.h>
+#include<stdio.h>
 
 #define CHUNK_SIZE 1024 * 768 * 3
 /* width * height * num of planes (3 for R, G and B) */
@@ -35,21 +36,29 @@ static gboolean pushdata(CustomData *data){
   // Generating waveforms
   gst_buffer_map (buffer, &map, GST_MAP_WRITE);
   gst_video_frame_map_id (&frame, &data -> info, buffer, -1, GST_MAP_WRITE);
-  if(gst_video_frame_map(&frame, &data->info, buffer, GST_MAP_READ)){
-    guint8 *pixels = GST_VIDEO_FRAME_PLANE_DATA (&frame, 0);
-     guint stride = GST_VIDEO_FRAME_PLANE_STRIDE (&frame, 0);
-     guint pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE (&frame, 0);
-     guint h, w;
-     for (h = 0; h < data->height; h++) {
-       for (w = 0; w < data->width; w++) {
-         guint8 *pixel = pixels + h * stride + w * pixel_stride;
-         memset (pixel, 100, pixel_stride);
+  int p;
+
+  for(p = 0; p < 2; p++){
+    if(gst_video_frame_map(&frame, &data->info, buffer, GST_MAP_READ)){
+      guint8 *pixels = GST_VIDEO_FRAME_PLANE_DATA (&frame, p);
+       guint stride = GST_VIDEO_FRAME_PLANE_STRIDE (&frame, p);
+       guint pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE (&frame, p);
+       guint h, w;
+       for (h = 0; h < data->height; h++) {
+         for (w = 0; w < data->width; w++) {
+           guint8 *pixel = pixels + h * stride + w * pixel_stride;
+           if(p == 1){
+             memset (pixel, 255, pixel_stride);
+           } else{
+             memset(pixel, 0, pixel_stride);
+           }
+
        }
      }
 
-     gst_video_frame_unmap (&frame);
    }
-
+ }
+ gst_video_frame_unmap (&frame);
   gst_buffer_unmap (buffer, &map);
 
 
@@ -110,7 +119,7 @@ if(!data.appsrc || !data.videoconvert || !data.autovideosink || !data.pipeline){
 }
 
 //configure appsrc caps
-gst_video_info_set_format(&data.info, GST_VIDEO_FORMAT_RGB, 1024, 768);
+gst_video_info_set_format(&data.info, GST_VIDEO_FORMAT_I420, 1024, 768);
 GstCaps *video_caps = gst_video_info_to_caps(&data.info);
 data.height = 768;
 data.width = 1024;
