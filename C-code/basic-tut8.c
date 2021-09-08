@@ -35,7 +35,7 @@ static gboolean pushdata(CustomData *data){
   gint num_samples = CHUNK_SIZE / 2; // Each sample is 16 bits = 2 bytes
   gfloat freq;
 
-  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE);
+  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE); 
   //Timestamp and duration for buffer
   GST_BUFFER_TIMESTAMP(buffer) = gst_util_uint64_scale(data->num_samples, GST_SECOND, SAMPLE_RATE);
   GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale(num_samples, GST_SECOND, SAMPLE_RATE);
