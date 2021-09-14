@@ -30,8 +30,8 @@ static gboolean pushdata(CustomData *data){
   buffer = gst_buffer_new_and_alloc(CHUNK_SIZE); // 1024 * 768 * 3
   //Timestamp and duration for buffer
   //GST_BUFFER_TIMESTAMP(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
-  GST_BUFFER_PTS(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
-  GST_BUFFER_DTS(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
+  GST_BUFFER_PTS(buffer) = data->timeflag;
+  GST_BUFFER_DTS(buffer) = data->timeflag;
   GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, FRAMES_PER_SECOND);
   data->timeflag  += gst_util_uint64_scale_int(1, GST_SECOND ,FRAMES_PER_SECOND);
 
