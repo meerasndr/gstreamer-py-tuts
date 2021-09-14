@@ -3,19 +3,19 @@
 #include<string.h>
 #include<stdio.h>
 
-#define CHUNK_SIZE 1024 * 768 * 3
+#define CHUNK_SIZE1 1024 * 768 * 3
+#define CHUNK_SIZE2 640 * 480 * 3
 /* width * height * num of planes (3 for R, G and B) */
 #define FRAMES_PER_SECOND 30
 
 typedef struct _CustomData{
   GstElement *appsrc;
-  //To Do: caps filter
-  GstElement *capsfilter;
   GstElement *videoconvert;
   GstElement *autovideosink;
   GstElement *pipeline;
   GMainLoop *main_loop;
-  GstClockTime timeflag;
+  GstClockTime buftimestamp;
+  int framecount;
   guint sourceid;
   GstVideoInfo info;
 } CustomData;
@@ -27,18 +27,20 @@ static gboolean pushdata(CustomData *data){
   gint16 *raw;
   gfloat freq;
 
-  if(data->timeflag > 10){
+  if(data->framecount > 100){
     gst_video_info_set_format(&data->info, GST_VIDEO_FORMAT_GBR, 640, 480);
     GstCaps *video_caps2 = gst_video_info_to_caps(&data->info);
     g_object_set(data -> appsrc, "caps", video_caps2, "format", GST_FORMAT_TIME, NULL);
-  }
-  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE); // 1024 * 768 * 3
+    buffer = gst_buffer_new_and_alloc(CHUNK_SIZE2); // 640 * 480 * 3
+  } else{
+  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE1); // 1024 * 768 * 3
+}
   //Timestamp and duration for buffer
-  GST_BUFFER_PTS(buffer) = data->timeflag;
-  GST_BUFFER_DTS(buffer) = data->timeflag;
+  GST_BUFFER_PTS(buffer) = data->buftimestamp;
+  GST_BUFFER_DTS(buffer) = data->buftimestamp;
   GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, FRAMES_PER_SECOND);
-  data->timeflag  += gst_util_uint64_scale_int(1, GST_SECOND ,FRAMES_PER_SECOND);
-
+  data->buftimestamp  += gst_util_uint64_scale_int(1, GST_SECOND ,FRAMES_PER_SECOND);
+  data->framecount += 1;
   // Generating waveforms
   gst_buffer_map (buffer, &map, GST_MAP_WRITE);
   gst_video_frame_map_id (&frame, &data -> info, buffer, -1, GST_MAP_WRITE);
@@ -114,14 +116,13 @@ int main(int argc, char *argv[]){
   memset(&data, 0, sizeof(data)); // Set a region of memory to a certain value? Requires string.h
 
   data.appsrc = gst_element_factory_make("appsrc", "video_source");
-  data.capsfilter = gst_element_factory_make("capsfilter", "capsfilter");
   data.videoconvert = gst_element_factory_make("videoconvert", "videoconvert");
   data.autovideosink = gst_element_factory_make("autovideosink", "autovideosink");
   data.pipeline = gst_pipeline_new("test-pipeline");
 
   //gst_video_info_init (data.info);
 
-  if(!data.appsrc || !data.capsfilter ||  !data.videoconvert || !data.autovideosink || !data.pipeline){
+  if(!data.appsrc || !data.videoconvert || !data.autovideosink || !data.pipeline){
     g_printerr("All elements could not be created\n");
     return -1;
   }
@@ -132,7 +133,8 @@ int main(int argc, char *argv[]){
 
   //data.height = 768;
   //data.width = 1024;
-  data.timeflag = 0; //start time for buffer
+  data.buftimestamp = 0; //start time for buffer
+  data.framecount = 0;
 // Caps filter
 /*GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
      "format", G_TYPE_STRING, "RGB",
