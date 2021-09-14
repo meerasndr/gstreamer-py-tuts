@@ -9,11 +9,12 @@
 
 typedef struct _CustomData{
   GstElement *appsrc;
+  //To Do: caps filter
   GstElement *videoconvert;
   GstElement *autovideosink;
   GstElement *pipeline;
   GMainLoop *main_loop;
-  gfloat timeflag;
+  GstClockTime timeflag;
   int height, width;
   guint sourceid;
   GstVideoInfo info;
@@ -28,9 +29,11 @@ static gboolean pushdata(CustomData *data){
 
   buffer = gst_buffer_new_and_alloc(CHUNK_SIZE); // 1024 * 768 * 3
   //Timestamp and duration for buffer
-  //GST_BUFFER_TIMESTAMP(buffer) = data->timeflag + (1 / FRAMES_PER_SECOND);
-  GST_BUFFER_DURATION(buffer) = 1 / FRAMES_PER_SECOND;
-  data -> timeflag  += (1 / FRAMES_PER_SECOND);
+  //GST_BUFFER_TIMESTAMP(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
+  GST_BUFFER_PTS(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
+  GST_BUFFER_DTS(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
+  GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, FRAMES_PER_SECOND);
+  data->timeflag  += gst_util_uint64_scale_int(1, GST_SECOND ,FRAMES_PER_SECOND);
 
   // Generating waveforms
   gst_buffer_map (buffer, &map, GST_MAP_WRITE);
@@ -124,6 +127,7 @@ GstCaps *video_caps = gst_video_info_to_caps(&data.info);
 data.height = 768;
 data.width = 1024;
 data.timeflag = 0;
+// Caps filter
 /*GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
      "format", G_TYPE_STRING, "RGB",
      "framerate", GST_TYPE_FRACTION, 25, 1,
