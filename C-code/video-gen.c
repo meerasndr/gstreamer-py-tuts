@@ -5,7 +5,6 @@
 
 #define CHUNK_SIZE 1024 * 768 * 3
 /* width * height * num of planes (3 for R, G and B) */
-//#define SAMPLE_RATE 44100
 #define FRAMES_PER_SECOND 30
 
 typedef struct _CustomData{
@@ -14,7 +13,7 @@ typedef struct _CustomData{
   GstElement *autovideosink;
   GstElement *pipeline;
   GMainLoop *main_loop;
-  guint64 num_samples;
+  gfloat timeflag;
   int height, width;
   guint sourceid;
   GstVideoInfo info;
@@ -25,13 +24,13 @@ static gboolean pushdata(CustomData *data){
   GstVideoFrame frame;
   GstMapInfo map;
   gint16 *raw;
-  gint num_samples = CHUNK_SIZE / 2; // Each sample is 16 bits = 2 bytes
   gfloat freq;
 
   buffer = gst_buffer_new_and_alloc(CHUNK_SIZE); // 1024 * 768 * 3
   //Timestamp and duration for buffer
-  //GST_BUFFER_TIMESTAMP(buffer) = gst_util_uint64_scale(data->num_samples, GST_SECOND, FRAMES_PER_SECOND);
-  GST_BUFFER_DURATION(buffer) = GST_CLOCK_TIME_NONE;
+  //GST_BUFFER_TIMESTAMP(buffer) = data->timeflag + (1 / FRAMES_PER_SECOND);
+  GST_BUFFER_DURATION(buffer) = 1 / FRAMES_PER_SECOND;
+  data -> timeflag  += (1 / FRAMES_PER_SECOND);
 
   // Generating waveforms
   gst_buffer_map (buffer, &map, GST_MAP_WRITE);
@@ -124,6 +123,7 @@ gst_video_info_set_format(&data.info, GST_VIDEO_FORMAT_GBR, 1024, 768);
 GstCaps *video_caps = gst_video_info_to_caps(&data.info);
 data.height = 768;
 data.width = 1024;
+data.timeflag = 0;
 /*GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
      "format", G_TYPE_STRING, "RGB",
      "framerate", GST_TYPE_FRACTION, 25, 1,
