@@ -27,10 +27,12 @@ static gboolean pushdata(CustomData *data){
   gint16 *raw;
   gfloat freq;
 
-  if(data->framecount > 100){
-    gst_video_info_set_format(&data->info, GST_VIDEO_FORMAT_GBR, 640, 480);
-    GstCaps *video_caps2 = gst_video_info_to_caps(&data->info);
-    g_object_set(data -> appsrc, "caps", video_caps2, "format", GST_FORMAT_TIME, NULL);
+  if(data->framecount  ==  100){
+    gst_video_info_set_format(&(data->info), GST_VIDEO_FORMAT_GBR, 520, 420); // debugging: print width and height
+    GstCaps *video_caps2 = gst_video_info_to_caps(&(data->info));
+    g_object_set(data -> appsrc, "caps", video_caps2, NULL);
+  }
+  if(data-> framecount >= 100){
     buffer = gst_buffer_new_and_alloc(CHUNK_SIZE2); // 640 * 480 * 3
   } else{
   buffer = gst_buffer_new_and_alloc(CHUNK_SIZE1); // 1024 * 768 * 3
@@ -43,17 +45,20 @@ static gboolean pushdata(CustomData *data){
   data->framecount += 1;
   // Generating waveforms
   gst_buffer_map (buffer, &map, GST_MAP_WRITE);
-  gst_video_frame_map_id (&frame, &data -> info, buffer, -1, GST_MAP_WRITE);
+  gst_video_frame_map_id (&frame, &(data->info), buffer, -1, GST_MAP_WRITE);
   int p;
 
   for(p = 0; p < GST_VIDEO_FRAME_N_PLANES(&frame); p++){
-    if(gst_video_frame_map(&frame, &data->info, buffer, GST_MAP_READ)){
+    g_print("%d\n", GST_VIDEO_INFO_HEIGHT(&(data->info)));
+    g_print("%d\n", GST_VIDEO_INFO_WIDTH(&(data->info)));
+
+    if(gst_video_frame_map(&frame, &(data->info), buffer, GST_MAP_READ)){
       guint8 *pixels = GST_VIDEO_FRAME_PLANE_DATA (&frame, p);
       guint stride = GST_VIDEO_FRAME_PLANE_STRIDE (&frame, p);
       guint pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE (&frame, p);
       guint h, w;
-       for (h = 0; h < GST_VIDEO_INFO_HEIGHT(&data->info); h++) {
-         for (w = 0; w < GST_VIDEO_INFO_WIDTH(&data->info); w++) {
+       for (h = 0; h < GST_VIDEO_INFO_HEIGHT(&(data->info)); h++) {
+         for (w = 0; w < GST_VIDEO_INFO_WIDTH(&(data->info)); w++) {
            guint8 *pixel = pixels + h * stride + w * pixel_stride;
            if(p != 2){
              memset (pixel, 0, pixel_stride);
@@ -120,7 +125,7 @@ int main(int argc, char *argv[]){
   data.autovideosink = gst_element_factory_make("autovideosink", "autovideosink");
   data.pipeline = gst_pipeline_new("test-pipeline");
 
-  //gst_video_info_init (data.info);
+  gst_video_info_init(&(data.info));
 
   if(!data.appsrc || !data.videoconvert || !data.autovideosink || !data.pipeline){
     g_printerr("All elements could not be created\n");
@@ -128,8 +133,8 @@ int main(int argc, char *argv[]){
   }
 
   //configure appsrc caps
-  gst_video_info_set_format(&data.info, GST_VIDEO_FORMAT_GBR, 1024, 768);
-  GstCaps *video_caps1 = gst_video_info_to_caps(&data.info);
+  gst_video_info_set_format(&(data.info), GST_VIDEO_FORMAT_GBR, 1024, 768);
+  GstCaps *video_caps1 = gst_video_info_to_caps(&(data.info));
 
   //data.height = 768;
   //data.width = 1024;
