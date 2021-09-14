@@ -10,12 +10,12 @@
 typedef struct _CustomData{
   GstElement *appsrc;
   //To Do: caps filter
+  GstElement *capsfilter;
   GstElement *videoconvert;
   GstElement *autovideosink;
   GstElement *pipeline;
   GMainLoop *main_loop;
   GstClockTime timeflag;
-  int height, width;
   guint sourceid;
   GstVideoInfo info;
 } CustomData;
@@ -27,9 +27,13 @@ static gboolean pushdata(CustomData *data){
   gint16 *raw;
   gfloat freq;
 
+  if(data->timeflag > 10){
+    gst_video_info_set_format(&data->info, GST_VIDEO_FORMAT_GBR, 640, 480);
+    GstCaps *video_caps2 = gst_video_info_to_caps(&data->info);
+    g_object_set(data -> appsrc, "caps", video_caps2, "format", GST_FORMAT_TIME, NULL);
+  }
   buffer = gst_buffer_new_and_alloc(CHUNK_SIZE); // 1024 * 768 * 3
   //Timestamp and duration for buffer
-  //GST_BUFFER_TIMESTAMP(buffer) = gst_util_uint64_scale_int (data->timeflag, GST_SECOND, FRAMES_PER_SECOND);
   GST_BUFFER_PTS(buffer) = data->timeflag;
   GST_BUFFER_DTS(buffer) = data->timeflag;
   GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, FRAMES_PER_SECOND);
@@ -46,8 +50,8 @@ static gboolean pushdata(CustomData *data){
       guint stride = GST_VIDEO_FRAME_PLANE_STRIDE (&frame, p);
       guint pixel_stride = GST_VIDEO_FRAME_COMP_PSTRIDE (&frame, p);
       guint h, w;
-       for (h = 0; h < data->height; h++) {
-         for (w = 0; w < data->width; w++) {
+       for (h = 0; h < GST_VIDEO_INFO_HEIGHT(&data->info); h++) {
+         for (w = 0; w < GST_VIDEO_INFO_WIDTH(&data->info); w++) {
            guint8 *pixel = pixels + h * stride + w * pixel_stride;
            if(p != 2){
              memset (pixel, 0, pixel_stride);
@@ -110,23 +114,25 @@ int main(int argc, char *argv[]){
   memset(&data, 0, sizeof(data)); // Set a region of memory to a certain value? Requires string.h
 
   data.appsrc = gst_element_factory_make("appsrc", "video_source");
+  data.capsfilter = gst_element_factory_make("capsfilter", "capsfilter");
   data.videoconvert = gst_element_factory_make("videoconvert", "videoconvert");
   data.autovideosink = gst_element_factory_make("autovideosink", "autovideosink");
   data.pipeline = gst_pipeline_new("test-pipeline");
 
   //gst_video_info_init (data.info);
 
-if(!data.appsrc || !data.videoconvert || !data.autovideosink || !data.pipeline){
-  g_printerr("All elements could not be created\n");
-  return -1;
-}
+  if(!data.appsrc || !data.capsfilter ||  !data.videoconvert || !data.autovideosink || !data.pipeline){
+    g_printerr("All elements could not be created\n");
+    return -1;
+  }
 
-//configure appsrc caps
-gst_video_info_set_format(&data.info, GST_VIDEO_FORMAT_GBR, 1024, 768);
-GstCaps *video_caps = gst_video_info_to_caps(&data.info);
-data.height = 768;
-data.width = 1024;
-data.timeflag = 0;
+  //configure appsrc caps
+  gst_video_info_set_format(&data.info, GST_VIDEO_FORMAT_GBR, 1024, 768);
+  GstCaps *video_caps1 = gst_video_info_to_caps(&data.info);
+
+  //data.height = 768;
+  //data.width = 1024;
+  data.timeflag = 0; //start time for buffer
 // Caps filter
 /*GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
      "format", G_TYPE_STRING, "RGB",
@@ -139,8 +145,7 @@ if(!gst_video_info_from_caps(data.info, video_caps)){
   g_printerr("Could not parse caps to Gst video info\n");
 }*/
 
-g_object_set(data.appsrc, "caps", video_caps, "format", GST_FORMAT_TIME, NULL);
-
+g_object_set(data.appsrc, "caps", video_caps1, "format", GST_FORMAT_TIME, NULL);
 // configure appsrc signal handler
 g_signal_connect(data.appsrc, "need-data", G_CALLBACK(start_feed), &data);
 g_signal_connect(data.appsrc, "enough-data", G_CALLBACK(stop_feed), &data);
