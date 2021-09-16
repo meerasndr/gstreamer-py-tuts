@@ -12,7 +12,6 @@
 typedef struct _CustomData{
   GstElement *appsrc;
   GstElement *videoconvert;
-  GstElement *autovideosink;
   GstElement *vp8enc;
   GstElement *matromux;
   GstElement *filesink;
@@ -126,13 +125,12 @@ int main(int argc, char *argv[]){
   data.videoconvert = gst_element_factory_make("videoconvert", "videoconvert");
   data.vp8enc = gst_element_factory_make("vp8enc", "vp8enc");
   data.matromux = gst_element_factory_make("webmmux", "webmmux");
-  data.autovideosink = gst_element_factory_make("autovideosink", "autovideosink");
   data.filesink = gst_element_factory_make("filesink", "filesink");
   data.pipeline = gst_pipeline_new("test-pipeline");
 
   gst_video_info_init(&(data.info));
 
-  if(!data.appsrc || !data.videoconvert || !data.autovideosink || !data.pipeline || !data.vp8enc || !data.matromux || !data.filesink){
+  if(!data.appsrc || !data.videoconvert || !data.pipeline || !data.vp8enc || !data.matromux || !data.filesink){
     g_printerr("All elements could not be created\n");
     return -1;
   }
