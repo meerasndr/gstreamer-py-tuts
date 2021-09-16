@@ -29,7 +29,9 @@ static gboolean pushdata(CustomData *data){
   GstMapInfo map;
   gint16 *raw;
   gfloat freq;
+  GstFlowReturn ret;
 
+  // resolution change
   if(data->framecount  ==  100){
     gst_video_info_set_format(&(data->info), GST_VIDEO_FORMAT_GBR, 480, 420);
     GstCaps *video_caps2 = gst_video_info_to_caps(&(data->info));
@@ -46,14 +48,12 @@ static gboolean pushdata(CustomData *data){
   GST_BUFFER_DURATION(buffer) = gst_util_uint64_scale_int(1, GST_SECOND, FRAMES_PER_SECOND);
   data->buftimestamp  += gst_util_uint64_scale_int(1, GST_SECOND ,FRAMES_PER_SECOND);
   data->framecount += 1;
-  // Generating waveforms
+
+  // Generating video
   gst_buffer_map (buffer, &map, GST_MAP_WRITE);
   gst_video_frame_map_id (&frame, &(data->info), buffer, -1, GST_MAP_WRITE);
-  int p;
-
-  for(p = 0; p < GST_VIDEO_FRAME_N_PLANES(&frame); p++){
-    g_print("%d\n", GST_VIDEO_INFO_HEIGHT(&(data->info)));
-    g_print("%d\n", GST_VIDEO_INFO_WIDTH(&(data->info)));
+  for(int p = 0; p < GST_VIDEO_FRAME_N_PLANES(&frame); p++){
+    g_print("H %d W %d\n", GST_VIDEO_INFO_HEIGHT(&(data->info)), GST_VIDEO_INFO_WIDTH(&(data->info)));
 
     if(gst_video_frame_map(&frame, &(data->info), buffer, GST_MAP_READ)){
       guint8 *pixels = GST_VIDEO_FRAME_PLANE_DATA (&frame, p);
@@ -73,14 +73,10 @@ static gboolean pushdata(CustomData *data){
      }
    }
  }
- gst_video_frame_unmap (&frame);
+  gst_video_frame_unmap (&frame);
   gst_buffer_unmap (buffer, &map);
-
-
-  GstFlowReturn ret;
   g_signal_emit_by_name(data->appsrc, "push-buffer", buffer, &ret);
   gst_buffer_unref(buffer);
-
   if (ret != GST_FLOW_OK){
     return FALSE;
   }
@@ -105,29 +101,24 @@ static void stop_feed(GstElement *source, CustomData *data){
 static void error_cb(GstBus *bus, GstMessage *msg, CustomData *data){
   GError *err;
   gchar *debug_info;
-
   gst_message_parse_error(msg, &err, &debug_info);
   g_printerr ("Error received from element %s: %s\n", GST_OBJECT_NAME (msg->src), err->message);
   g_printerr ("Debugging information: %s\n", debug_info ? debug_info : "none");
   g_clear_error (&err);
   g_free (debug_info);
-
   g_main_loop_quit (data->main_loop);
 }
 
 int main(int argc, char *argv[]){
   gst_init(&argc, &argv);
   CustomData data;
-  //GstVideoInfo info;
   memset(&data, 0, sizeof(data)); // Set a region of memory to a certain value? Requires string.h
-
   data.appsrc = gst_element_factory_make("appsrc", "video_source");
   data.videoconvert = gst_element_factory_make("videoconvert", "videoconvert");
   data.vp8enc = gst_element_factory_make("vp8enc", "vp8enc");
   data.matromux = gst_element_factory_make("webmmux", "webmmux");
   data.filesink = gst_element_factory_make("filesink", "filesink");
   data.pipeline = gst_pipeline_new("test-pipeline");
-
   gst_video_info_init(&(data.info));
 
   if(!data.appsrc || !data.videoconvert || !data.pipeline || !data.vp8enc || !data.matromux || !data.filesink){
@@ -140,12 +131,13 @@ int main(int argc, char *argv[]){
   GstCaps *video_caps1 = gst_video_info_to_caps(&(data.info));
   data.buftimestamp = 0; //start time for buffer
   data.framecount = 0;
-
   g_object_set(data.appsrc, "caps", video_caps1, "format", GST_FORMAT_TIME, NULL);
+
   // configure appsrc signal handler
   g_signal_connect(data.appsrc, "need-data", G_CALLBACK(start_feed), &data);
   g_signal_connect(data.appsrc, "enough-data", G_CALLBACK(stop_feed), &data);
 
+  //set filesink output location
   g_object_set(data.filesink, "location", "vidoutput", NULL);
 
   // Add elements to be linked
@@ -170,6 +162,7 @@ int main(int argc, char *argv[]){
   g_main_loop_run(data.main_loop);
 
   // free resources
+  gst_caps_unref(video_caps1);
   gst_element_set_state(data.pipeline, GST_STATE_NULL);
   gst_object_unref(data.pipeline);
 
