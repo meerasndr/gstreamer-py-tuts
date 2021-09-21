@@ -4,7 +4,7 @@
 #include<stdio.h>
 
 #define CHUNK_SIZE1 1024 * 768 * 3
-#define CHUNK_SIZE2 640 * 480 * 3
+#define CHUNK_SIZE2 520 * 420 * 3
 /* width * height * num of planes (3 for R, G and B) */
 #define FRAMES_PER_SECOND 30
 

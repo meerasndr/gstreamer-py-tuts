@@ -9,7 +9,7 @@
 /* width * height * num of planes (3 for R, G and B) */
 #define FRAMES_PER_SECOND 30
 
-typedef struct _CustomData{
+typedef struct _CustomData {
   GstElement *appsrc;
   GstElement *videoconvert;
   GstElement *vp8enc;
@@ -33,14 +33,27 @@ static gboolean pushdata(CustomData *data){
 
   // resolution change
   if(data->framecount  ==  100){
-    gst_video_info_set_format(&(data->info), GST_VIDEO_FORMAT_GBR, 480, 420);
+    gst_video_info_init(&(data->info));
+    GstCaps *video_caps2 = gst_caps_new_simple ("video/x-raw",
+         "format", G_TYPE_STRING, "I420",
+         "framerate", GST_TYPE_FRACTION, 30, 1,
+         "width", G_TYPE_INT, 640,
+         "height", G_TYPE_INT, 480,
+         "colorimetry", G_TYPE_STRING, GST_VIDEO_COLORIMETRY_BT709,
+         NULL);
+    if(!gst_video_info_from_caps(&(data->info), video_caps2)){
+      g_printerr("Could not parse caps to Gst video info\n");
+    }
+    g_object_set(data->appsrc, "caps", video_caps2, NULL);
+
+    /*gst_video_info_set_format(&(data->info), GST_VIDEO_FORMAT_GBR, 640, 480);
     GstCaps *video_caps2 = gst_video_info_to_caps(&(data->info));
-    g_object_set(data -> appsrc, "caps", video_caps2, NULL);
+    g_object_set(data->appsrc, "caps", video_caps2, NULL);*/
   }
-  if(data-> framecount >= 100){
-    buffer = gst_buffer_new_and_alloc(CHUNK_SIZE2); // 640 * 480 * 3
+  if(data->framecount >= 100){
+    buffer = gst_buffer_new_and_alloc(CHUNK_SIZE2);
   } else{
-  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE1); // 1024 * 768 * 3
+  buffer = gst_buffer_new_and_alloc(CHUNK_SIZE1);
 }
   //Timestamp and duration for buffer
   GST_BUFFER_PTS(buffer) = data->buftimestamp;
@@ -116,7 +129,7 @@ int main(int argc, char *argv[]){
   data.appsrc = gst_element_factory_make("appsrc", "video_source");
   data.videoconvert = gst_element_factory_make("videoconvert", "videoconvert");
   data.vp8enc = gst_element_factory_make("vp8enc", "vp8enc");
-  data.matromux = gst_element_factory_make("webmmux", "webmmux");
+  data.matromux = gst_element_factory_make("matroskamux", "matroskamux");
   data.filesink = gst_element_factory_make("filesink", "filesink");
   data.pipeline = gst_pipeline_new("test-pipeline");
   gst_video_info_init(&(data.info));
@@ -127,11 +140,21 @@ int main(int argc, char *argv[]){
   }
 
   //configure appsrc caps
-  gst_video_info_set_format(&(data.info), GST_VIDEO_FORMAT_GBR, 1024, 768);
-  GstCaps *video_caps1 = gst_video_info_to_caps(&(data.info));
+  //gst_video_info_set_format(&(data.info), GST_VIDEO_FORMAT_GBR, 640, 480);
+  //GstCaps *video_caps1 = gst_video_info_to_caps(&(data.info));
   data.buftimestamp = 0; //start time for buffer
   data.framecount = 0;
-  g_object_set(data.appsrc, "caps", video_caps1, "format", GST_FORMAT_TIME, NULL);
+  GstCaps *video_caps1 = gst_caps_new_simple ("video/x-raw",
+       "format", G_TYPE_STRING, "I420",
+       "framerate", GST_TYPE_FRACTION, 30, 1,
+       "width", G_TYPE_INT, 1024,
+       "height", G_TYPE_INT, 768,
+       "colorimetry", G_TYPE_STRING, GST_VIDEO_COLORIMETRY_BT709,
+       NULL);
+  if(!gst_video_info_from_caps(&(data.info), video_caps1)){
+    g_printerr("Could not parse caps to Gst video info\n");
+  }
+g_object_set(data.appsrc, "caps", video_caps1, "format", GST_FORMAT_TIME, NULL);
 
   // configure appsrc signal handler
   g_signal_connect(data.appsrc, "need-data", G_CALLBACK(start_feed), &data);
