@@ -1,0 +1,48 @@
+Visualize Resolution change
+GST_DEBUG=2,xvimagesink:5 ./video-gen
+
+
+    The idea is we want to make an appsrc based source of data for video instead of audio
+    We can pick some format for which generating video is easy (GRAY8 or RGB)
+    Once we are able to get some frames going (it's okay if it's the same frame in a loop), we'll add another wrinkle
+    We want to emulate changing the video resolution on the fly
+    First, let's just have a simple appsrc ! videoconvert ! autovideosink pipeline to see these changes occur
+    Next, we want to store the changing video in a file, let's say with vp8enc for the codec, and webmmux for the container
+    Why are we doing this? We want to see if we can construct a test case for this: https://gitlab.freedesktop.org/gstreamer/gst-plugins-good/-/merge_requests/1008
+
+
+1. Reproducing issue: instead of videosink -> pass it through (vp8enc/vp9enc) encoder & matroska multiplexer -> write to file (filesink)
+2. Testing the fix: https://gitlab.freedesktop.org/gstreamer/gst-build
+
+Devenv advantages:
+GST_PLUGIN_PATH
+GDB-Debugging
+ldd
+debug symbols -g
+
+git am
+
+
+
+git update on the gst-build repo
+
+what is colorimetry?
+does it work fine with the patch ?
+
+--
+
+videoconvert : GBR to I420
+
+
+1280 x 720
+--
+
+play with freq of res changes and length of the file
+check matroska file
+mkvtoolnix
+
+changing framerate multiple times
+changing the output number of frames
+
+varying length of output - send an EOS event from appsrc
+2 sec video @ 30 fps -> send 60 frames then send EOS
