@@ -6,7 +6,7 @@
 #include <gst/app/gstappsrc.h>
 
 /* width * height * num of planes (3 for R, G and B) */
-#define FRAMES_PER_SECOND 2
+#define FRAMES_PER_SECOND 30
 
 typedef struct _CustomData {
   GstElement *appsrc;
@@ -28,7 +28,7 @@ static void setres(CustomData *data, char* format, int width, int height){
     gst_video_info_init(&(data->info));
     GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
          "format", G_TYPE_STRING, format,
-         "framerate", GST_TYPE_FRACTION, 2, 1,
+         "framerate", GST_TYPE_FRACTION, 30, 1,
          "width", G_TYPE_INT, width,
          "height", G_TYPE_INT, height,
          "colorimetry", G_TYPE_STRING, GST_VIDEO_COLORIMETRY_BT601,
