@@ -6,7 +6,7 @@
 #include <gst/app/gstappsrc.h>
 
 /* width * height * num of planes (3 for R, G and B) */
-#define FRAMES_PER_SECOND 30
+#define FRAMES_PER_SECOND 2
 
 typedef struct _CustomData {
   GstElement *appsrc;
@@ -20,6 +20,7 @@ typedef struct _CustomData {
   guint sourceid;
   int width;
   int height;
+  int resflip;
   GstVideoInfo info;
 } CustomData;
 
@@ -27,7 +28,7 @@ static void setres(CustomData *data, char* format, int width, int height){
     gst_video_info_init(&(data->info));
     GstCaps *video_caps = gst_caps_new_simple ("video/x-raw",
          "format", G_TYPE_STRING, format,
-         "framerate", GST_TYPE_FRACTION, 30, 1,
+         "framerate", GST_TYPE_FRACTION, 2, 1,
          "width", G_TYPE_INT, width,
          "height", G_TYPE_INT, height,
          "colorimetry", G_TYPE_STRING, GST_VIDEO_COLORIMETRY_BT601,
@@ -43,17 +44,30 @@ static gboolean pushdata(CustomData *data){
   GstVideoFrame frame;
   GstMapInfo map;
   gint16 *raw;
-  gfloat freq;
   GstFlowReturn ret;
   // resolution change every 100 frames
   // 0 - 99 1024x768 // 100 - 199 640x480 // 200 - 299 1024x768 .... and so on
- if(data->framecount % 200 >= 100 && data->framecount % 200 <= 199){
+ /*if(data->framecount % 200 >= 100 && data->framecount % 200 <= 199){
     setres(data, "I420", 1024, 768);
     buffer = gst_buffer_new_and_alloc(1024 * 768 * 3);
   } else if (data->framecount % 100 >= 0 && data->framecount % 100 <= 99){
     setres(data, "I420", 640, 480);
     buffer = gst_buffer_new_and_alloc(640 * 480 * 3);
+  }*/
+  if(data->resflip == 2){
+    data->resflip = 0;
   }
+
+  if(data->resflip < 1){
+    setres(data, "I420", 1024, 768);
+    buffer = gst_buffer_new_and_alloc(1024 * 768 * 3);
+    data->resflip += 1;
+  } else if(data -> resflip < 2){
+    setres(data, "I420", 640, 480);
+    buffer = gst_buffer_new_and_alloc(640 * 480 * 3);
+    data->resflip += 1;
+  }
+
   //GST_DEBUG_BIN_TO_DOT_FILE(GST_BIN(data->pipeline), GST_DEBUG_GRAPH_SHOW_ALL, "pipeline");
 
   //Timestamp and duration for buffer
@@ -93,7 +107,7 @@ static gboolean pushdata(CustomData *data){
   g_signal_emit_by_name(data->appsrc, "push-buffer", buffer, &ret);
   gst_buffer_unref(buffer);
 
-  if(data->framecount == 299){ // this is == 10 seconds of video output
+  if(data->framecount == 2){
     GstFlowReturn ret2 = gst_app_src_end_of_stream(GST_APP_SRC(data->appsrc));
     if(ret2 == GST_FLOW_OK){
       gst_event_new_eos();
@@ -157,6 +171,7 @@ int main(int argc, char *argv[]){
   data.buftimestamp = 0; //start time for buffer
   data.framecount = 0;
   setres(&data, "I420", 1024, 768);
+  data.resflip = 0;
 
   // configure appsrc signal handler
   g_signal_connect(data.appsrc, "need-data", G_CALLBACK(start_feed), &data);
